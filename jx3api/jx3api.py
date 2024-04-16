@@ -293,6 +293,44 @@ class JX3API:
     #############
 
     @require_token
+    @require_ticket
+    def save_detailed(self: Self, *, server: str, roleId: str) -> Dict:
+        """
+        save_detailed 角色更新, 数据服务
+
+        自动更新角色信息。
+
+        Args:
+            server (str): 区服名称，查找该区服的记录。
+            roleId (str): 角色数字标识，查找该标识的记录。
+
+        Returns:
+            Dict: 角色信息。
+        """
+        return self.request(
+            endpoint="/data/save/detailed", server=server, roleid=roleId
+        )
+
+    @require_token
+    @require_ticket
+    def role_detailed(self: Self, *, server: str, name: str) -> Dict:
+        """
+        role_detailed 角色信息
+
+        角色详细信息。
+
+        Args:
+            server (str): 区服名称，查找目标区服的记录。
+            name (str): 角色名称，查找目标角色的记录。
+
+        Returns:
+            Dict: 角色详细信息。
+        """
+        return self.request(
+            endpoint="/data/role/detailed", server=server, name=name
+        )
+
+    @require_token
     def school_matrix(self: Self, *, name: str) -> Dict:
         """
         school_matrix 阵法效果
@@ -1392,6 +1430,44 @@ class AsyncJX3API:
     #############
     # VIP I API #
     #############
+
+    @require_token
+    @require_ticket
+    async def save_detailed(self: Self, *, server: str, roleId: str) -> Awaitable[Dict]:
+        """
+        save_detailed 角色更新, 数据服务
+
+        自动更新角色信息。
+
+        Args:
+            server (str): 区服名称，查找该区服的记录。
+            roleId (str): 角色数字标识，查找该标识的记录。
+
+        Returns:
+            Awaitable[Dict]: 角色信息。
+        """
+        return await self.request(
+            endpoint="/data/save/detailed", server=server, roleid=roleId
+        )
+
+    @require_token
+    @require_ticket
+    async def role_detailed(self: Self, *, server: str, name: str) -> Awaitable[Dict]:
+        """
+        role_detailed 角色信息
+
+        角色详细信息。
+
+        Args:
+            server (str): 区服名称，查找目标区服的记录。
+            name (str): 角色名称，查找目标角色的记录。
+
+        Returns:
+            Awaitable[Dict]: 角色详细信息。
+        """
+        return await self.request(
+            endpoint="/data/role/detailed", server=server, name=name
+        )
 
     @require_token
     async def school_matrix(self: Self, *, name: str) -> Awaitable[Dict]:
