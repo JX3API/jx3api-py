@@ -1,10 +1,8 @@
-from datetime import datetime
-
 from setuptools import find_packages, setup
 
 setup(
     name="jx3api",
-    version=f"{datetime.now():%Y%m%d}",
+    version="20240416",
     description="The Python SDK to the JX3API",
     author="JX3API",
     url="https://www.jx3api.com",
