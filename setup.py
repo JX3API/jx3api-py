@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="jx3api",
-    version="20240416",
+    version="20240417",
     description="The Python SDK to the JX3API",
     long_description="The Python SDK to the JX3API",
     author="JX3API",
