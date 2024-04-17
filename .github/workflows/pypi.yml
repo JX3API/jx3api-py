@@ -13,4 +13,4 @@ jobs:
       - run: |
           python -m pip install build --user
           python -m build --sdist --wheel --output dist
-      - users: pypa/gh-action-pypi-publish@master
+      - uses: pypa/gh-action-pypi-publish@master
