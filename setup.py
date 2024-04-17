@@ -8,6 +8,7 @@ setup(
     version="2024.04.18",
     description="The Python SDK to the JX3API",
     long_description=readme,
+    long_description_content_type="text/markdown",
     author="JX3API",
     url="https://www.jx3api.com",
     packages=find_packages(),
