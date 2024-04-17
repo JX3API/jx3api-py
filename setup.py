@@ -1,10 +1,13 @@
 from setuptools import find_packages, setup
 
+with open("README.md", "r+") as f:
+    readme = f.read()
+
 setup(
     name="jx3api",
-    version="20240417",
+    version="2024.04.18",
     description="The Python SDK to the JX3API",
-    long_description="The Python SDK to the JX3API",
+    long_description=readme,
     author="JX3API",
     url="https://www.jx3api.com",
     packages=find_packages(),

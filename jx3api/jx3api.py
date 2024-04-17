@@ -41,28 +41,16 @@ class JX3API:
         self.token = token
         self.ticket = ticket
 
-    def __enter__(self: Self) -> Self:
-        return self
-
-    def __exit__(self: Self, exc_type, exc_value, traceback) -> None:
-        return
-
     def request(self: Self, *, endpoint: str, **kwargs) -> Any:
         logging.debug(f"requesting: {endpoint=}, {kwargs=}")
 
         kwargs["ticket"] = self.ticket
 
-        if self.token:
-            req = Request(
-                urljoin(base="https://www.jx3api.com", url=endpoint),
-                data=json.dumps(kwargs).encode(encoding="utf-8"),
-                headers={"token": self.token},
-            )
-        else:
-            req = Request(
-                urljoin(base="https://www.jx3api.com", url=endpoint),
-                data=json.dumps(kwargs).encode(encoding="utf-8"),
-            )
+        req = Request(
+            urljoin(base="https://www.jx3api.com", url=endpoint),
+            data=json.dumps(kwargs).encode(encoding="utf-8"),
+            headers={"token": self.token} if self.token else {},
+        )
 
         with closing(urlopen(req)) as resp:
             if (data := json.loads(resp.read()))["code"] != HTTPStatus.OK:
@@ -326,9 +314,7 @@ class JX3API:
         Returns:
             Dict: 角色详细信息。
         """
-        return self.request(
-            endpoint="/data/role/detailed", server=server, name=name
-        )
+        return self.request(endpoint="/data/role/detailed", server=server, name=name)
 
     @require_token
     def school_matrix(self: Self, *, name: str) -> Dict:
@@ -1177,23 +1163,17 @@ class AsyncJX3API:
         self.token = token
         self.ticket = ticket
 
-        if token:
-            self.session = aiohttp.ClientSession(
-                "https://www.jx3api.com", headers={"token": token}
-            )
-        else:
-            self.session = aiohttp.ClientSession("https://www.jx3api.com")
-
-    async def __aenter__(self: Self) -> Self:
-        return self
-
-    async def __aexit__(self: Self, exc_type, exc_value, traceback) -> None:
-        await self.session.close()
-
     async def request(self: Self, *, endpoint: str, **kwargs) -> Any:
+        logging.debug(f"requesting: {endpoint=}, {kwargs=}")
+
         kwargs["ticket"] = self.ticket
 
-        async with self.session.get(url=endpoint, json=kwargs) as resp:
+        async with aiohttp.request(
+            "GET",
+            urljoin(base="https://www.jx3api.com", url=endpoint),
+            data=json.dumps(kwargs).encode(encoding="utf-8"),
+            headers={"token": self.token} if self.token else None,
+        ) as resp:
             if (data := await resp.json(loads=json.loads))["code"] != HTTPStatus.OK:
                 raise APIError(code=data["code"], msg=data["msg"])
 
@@ -2347,7 +2327,10 @@ class AsyncJX3API:
 
     @require_token
     async def socket(self: Self) -> AsyncGenerator[Dict, None]:
-        async with self.session.ws_connect("wss://socket.nicemoe.cn") as ws:
+        async with (
+            aiohttp.ClientSession(headers={"token": self.token}) as session,
+            session.ws_connect("wss://socket.nicemoe.cn") as ws,
+        ):
             logging.info("websocket connected")
 
             async for msg in ws:

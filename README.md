@@ -19,16 +19,18 @@ pip install --no-cache -U git+https://github.com/JX3API/jx3api-py.git
 ```python
 from jx3api import JX3API
 
-with JX3API(token=..., ticket=...) as api:
-    api.active_calendar(server="梦江南")
+api = JX3API(token=..., ticket=...)
+
+api.active_calendar(server="梦江南")
 ```
 
 ### Async
 ```python
 from jx3api import AsyncJX3API
 
-async with AsyncJX3API(token=..., ticket=...) as api:
-    await api.active_calendar(server="梦江南")
+async_api = AsyncJX3API(token=..., ticket=...)
+
+await async_api.active_calendar(server="梦江南")
 ```
 
 ## FYI
