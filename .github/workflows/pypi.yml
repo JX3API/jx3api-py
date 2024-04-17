@@ -14,5 +14,3 @@ jobs:
           python -m pip install build --user
           python -m build --sdist --wheel --output dist
       - users: pypa/gh-action-pypi-publish@master
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}

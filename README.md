@@ -2,6 +2,13 @@
 The Python SDK to the [JX3API](https://www.jx3api.com).
 
 ## Installation
+
+### From pypi
+```bash
+pip install --no-cache -U jx3api
+```
+
+### From github
 ```bash
 pip install --no-cache -U git+https://github.com/JX3API/jx3api-py.git
 ```
