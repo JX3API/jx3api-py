@@ -47,7 +47,7 @@ class JX3API:
         kwargs["ticket"] = self.ticket
 
         req = Request(
-            urljoin(base="https://www.jx3api.com", url=endpoint),
+            urljoin(base="https://api.jx3api.com", url=endpoint),
             data=json.dumps(kwargs).encode(encoding="utf-8"),
             headers={"token": self.token} if self.token else {},
         )
@@ -1170,7 +1170,7 @@ class AsyncJX3API:
 
         async with aiohttp.request(
             "GET",
-            urljoin(base="https://www.jx3api.com", url=endpoint),
+            urljoin(base="https://api.jx3api.com", url=endpoint),
             data=json.dumps(kwargs).encode(encoding="utf-8"),
             headers={"token": self.token} if self.token else None,
         ) as resp:
