@@ -2,13 +2,29 @@ import logging
 from contextlib import closing
 from functools import partial
 from http import HTTPStatus
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Literal, Self
+from typing import (
+    Annotated,
+    Any,
+    AsyncGenerator,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Sequence,
+)
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 import aiohttp
 
 from .exception import APIError
+from .response import (
+    ResponseActiveCalendar,
+    ResponseActiveCelebrity,
+    ResponseActiveListCalendar,
+    ResponseExamAnswer,
+)
 
 try:
     import ujson as json
@@ -32,7 +48,12 @@ logging.basicConfig(
 
 
 class JX3API:
-    def __init__(self, *, token: str | None = None, ticket: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        token: Annotated[str | None, "推栏 token"] = None,
+        ticket: Annotated[str | None, "站点标识"] = None,
+    ) -> None:
         if not token:
             logging.warning(
                 "The `token` parameter is not specified, only the free API can be used."
@@ -41,7 +62,7 @@ class JX3API:
         self.token = token
         self.ticket = ticket
 
-    def request(self: Self, *, endpoint: str, **kwargs) -> Any:
+    def request(self, *, endpoint: str, **kwargs) -> Any:
         logging.debug(f"requesting: {endpoint=}, {kwargs=}")
 
         kwargs["ticket"] = self.ticket
@@ -49,7 +70,7 @@ class JX3API:
         req = Request(
             urljoin(base="https://www.jx3api.com", url=endpoint),
             data=json.dumps(kwargs).encode(encoding="utf-8"),
-            headers={"token": self.token} if self.token else {},
+            headers={"token": token} if (token := self.token) else {},
         )
 
         with closing(urlopen(req)) as resp:
@@ -59,8 +80,8 @@ class JX3API:
         return data["data"]
 
     @staticmethod
-    def require_token(func) -> Callable[..., Any]:
-        def decorator(self: Self, *args, **kwargs) -> Callable[..., Any]:
+    def require_token(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(self, *args, **kwargs) -> Callable[..., Any]:
             if not self.token:
                 raise ValueError(
                     "The `token` parameter is not specified, only the free API can be used."
@@ -70,8 +91,8 @@ class JX3API:
         return decorator
 
     @staticmethod
-    def require_ticket(func) -> Callable[..., Any]:
-        def decorator(self: Self, *args, **kwargs) -> Callable[..., Any]:
+    def require_ticket(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(self, *args, **kwargs) -> Callable[..., Any]:
             if not self.ticket:
                 raise ValueError("The `ticket` parameter must be specified.")
             return func(self, *args, **kwargs)
@@ -82,7 +103,12 @@ class JX3API:
     # FREE API #
     ############
 
-    def active_calendar(self: Self, *, server: str | None = None, num: int = 0) -> Dict:
+    def active_calendar(
+        self,
+        *,
+        server: Annotated[str | None, "区服名称"] = None,
+        num: Annotated[int, "预测时间"] = 0,
+    ) -> Annotated[ResponseActiveCalendar, "今天、明天、后天、日常任务"]:
         """
         active_calendar 活动日历
 
@@ -94,11 +120,13 @@ class JX3API:
             num (int, optional): 预测时间，预测指定时间的日常，默认值: ``0`` 为当天，``1`` 为明天，以此类推。
 
         Returns:
-            Dict: 今天、明天、后天、日常任务。
+            ResponseActiveCalendar: 今天、明天、后天、日常任务。
         """
         return self.request(endpoint="/data/active/calendar", server=server, num=num)
 
-    def active_list_calendar(self: Self, *, num: int = 15) -> Dict:
+    def active_list_calendar(
+        self, *, num: Annotated[int, "预测时间"] = 15
+    ) -> Annotated[ResponseActiveListCalendar, "预测每天的日常任务"]:
         """
         active_list_calendar 活动月历
 
@@ -109,11 +137,13 @@ class JX3API:
             num (int, optional): 预测时间，预测指定时间范围内的活动，默认值 : ``15`` 为当天，``1`` 为明天。
 
         Returns:
-            Dict: 预测每天的日常任务。
+            ResponseActiveListCalendar: 预测每天的日常任务。
         """
         return self.request(endpoint="/data/active/list/calendar", num=num)
 
-    def active_celebrity(self: Self, *, season: int = 2) -> List[Dict]:
+    def active_celebrity(
+        self, *, season: Annotated[int, "第几赛季"] = 2
+    ) -> Annotated[Sequence[ResponseActiveCelebrity], "当前时间的楚天社/云从社进度"]:
         """
         active_celebrity 行侠事件
 
@@ -123,11 +153,16 @@ class JX3API:
             season (int, optional): 第几赛季，用于返回楚天社或云从社的判断条件，可选值：``1-3``。
 
         Returns:
-            List[Dict]: 当前时间的楚天社/云从社进度。
+            Sequence[ResponseActiveCelebrity]: 当前时间的楚天社/云从社进度。
         """
         return self.request(endpoint="/data/active/celebrity", season=season)
 
-    def exam_answer(self: Self, *, match: str, limit: int = 10) -> List[Dict]:
+    def exam_answer(
+        self,
+        *,
+        match: Annotated[str, "科举试题"],
+        limit: Annotated[int, "设置返回的数量"] = 10,
+    ) -> Sequence[ResponseExamAnswer]:
         """
         exam_answer 科举试题
 
@@ -138,12 +173,12 @@ class JX3API:
             limit (int, optional): 设置返回的数量，默认值 ``10``。
 
         Returns:
-            List[Dict]: 科举试题答案。
+            Sequence[ResponseExamAnswer]: 科举试题答案。
         """
         return self.request(endpoint="/data/exam/answer", match=match, limit=limit)
 
     def home_flower(
-        self: Self, *, server: str, name: str | None = None, map: str | None = None
+        self, *, server: str, name: str | None = None, map: str | None = None
     ) -> Dict:
         """
         home_flower 鲜花价格
@@ -162,7 +197,7 @@ class JX3API:
             endpoint="/data/home/flower", server=server, name=name, map=map
         )
 
-    def home_furniture(self: Self, *, name: str) -> Dict:
+    def home_furniture(self, *, name: str) -> Dict:
         """
         home_furniture 家园装饰
 
@@ -176,7 +211,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/home/furniture", name=name)
 
-    def home_travel(self: Self, *, name: str) -> List[Dict]:
+    def home_travel(self, *, name: str) -> List[Dict]:
         """
         home_travel 器物图谱
 
@@ -190,7 +225,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/home/travel", name=name)
 
-    def news_allnews(self: Self, *, limit: int = 10) -> List[Dict]:
+    def news_allnews(self, *, limit: int = 10) -> List[Dict]:
         """
         news_allnews 新闻资讯
 
@@ -204,7 +239,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/news/allnews", limit=limit)
 
-    def news_announce(self: Self, *, limit: int = 10) -> List[Dict]:
+    def news_announce(self, *, limit: int = 10) -> List[Dict]:
         """
         news_announce 维护公告
 
@@ -218,7 +253,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/news/announce", limit=limit)
 
-    def school_toxic(self: Self, *, name: str) -> List[Dict]:
+    def school_toxic(self, *, name: str) -> List[Dict]:
         """
         school_stoxic 小药清单
 
@@ -232,7 +267,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/school/toxic", name=name)
 
-    def server_master(self: Self, *, name: str) -> Dict:
+    def server_master(self, *, name: str) -> Dict:
         """
         server_master 搜索区服
 
@@ -246,7 +281,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/server/master", name=name)
 
-    def server_check(self: Self, *, server: str | None = None) -> Dict:
+    def server_check(self, *, server: str | None = None) -> Dict:
         """
         server_check 开服检查
 
@@ -262,7 +297,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/server/check", server=server)
 
-    def server_status(self: Self, *, server: str) -> Dict:
+    def server_status(self, *, server: str) -> Dict:
         """
         server_status 查看状态
 
@@ -282,7 +317,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def save_detailed(self: Self, *, server: str, roleId: str) -> Dict:
+    def save_detailed(self, *, server: str, roleId: str) -> Dict:
         """
         save_detailed 角色更新, 数据服务
 
@@ -301,7 +336,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def role_detailed(self: Self, *, server: str, name: str) -> Dict:
+    def role_detailed(self, *, server: str, name: str) -> Dict:
         """
         role_detailed 角色信息
 
@@ -317,7 +352,7 @@ class JX3API:
         return self.request(endpoint="/data/role/detailed", server=server, name=name)
 
     @require_token
-    def school_matrix(self: Self, *, name: str) -> Dict:
+    def school_matrix(self, *, name: str) -> Dict:
         """
         school_matrix 阵法效果
 
@@ -332,7 +367,7 @@ class JX3API:
         return self.request(endpoint="/data/school/matrix", name=name)
 
     @require_token
-    def school_force(self: Self, *, name: str) -> List[Dict]:
+    def school_force(self, *, name: str) -> List[Dict]:
         """
         school_force 奇穴效果
 
@@ -347,7 +382,7 @@ class JX3API:
         return self.request(endpoint="/data/school/force", name=name)
 
     @require_token
-    def school_skills(self: Self, *, name: str) -> List[Dict]:
+    def school_skills(self, *, name: str) -> List[Dict]:
         """
         school_skills 技能效果
 
@@ -363,7 +398,7 @@ class JX3API:
 
     @require_token
     def tieba_random(
-        self: Self, *, subclass: str, server: str | None = None, limit: int = 1
+        self, *, subclass: str, server: str | None = None, limit: int = 1
     ) -> List[Dict]:
         """
         tieba_random 八卦帖子
@@ -384,7 +419,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def role_attribute(self: Self, *, server: str, name: str) -> Dict:
+    def role_attribute(self, *, server: str, name: str) -> Dict:
         """
         role_attribute 装备属性
 
@@ -401,7 +436,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def role_teamcdlist(self: Self, *, server: str, name: str) -> Dict:
+    def role_teamcdlist(self, *, server: str, name: str) -> Dict:
         """
         role_teamcdlist 副本记录
 
@@ -417,7 +452,7 @@ class JX3API:
         return self.request(endpoint="/data/role/teamCdList", server=server, name=name)
 
     @require_token
-    def luck_adventure(self: Self, *, server: str, name: str) -> List[Dict]:
+    def luck_adventure(self, *, server: str, name: str) -> List[Dict]:
         """
         luck_adventure 奇遇记录
 
@@ -434,7 +469,7 @@ class JX3API:
 
     @require_token
     def luck_statistical(
-        self: Self, *, server: str, name: str, limit: int = 20
+        self, *, server: str, name: str, limit: int = 20
     ) -> List[Dict]:
         """
         luck_statistical 奇遇统计
@@ -454,9 +489,7 @@ class JX3API:
         )
 
     @require_token
-    def luck_server_statistical(
-        self: Self, *, name: str, limit: int = 20
-    ) -> List[Dict]:
+    def luck_server_statistical(self, *, name: str, limit: int = 20) -> List[Dict]:
         """
         luck_server_statistical 全服统计
 
@@ -474,7 +507,7 @@ class JX3API:
         )
 
     @require_token
-    def luck_collect(self: Self, *, server: str, num: int = 7) -> List[Dict]:
+    def luck_collect(self, *, server: str, num: int = 7) -> List[Dict]:
         """
         luck_collect 奇遇汇总
 
@@ -491,9 +524,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def role_achievement(
-        self: Self, *, server: str, role: str, name: str
-    ) -> List[Dict]:
+    def role_achievement(self, *, server: str, role: str, name: str) -> List[Dict]:
         """
         role_achievement 成就百科
 
@@ -513,7 +544,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def match_recent(self: Self, *, server: str, name: str, mode: int = 0) -> Dict:
+    def match_recent(self, *, server: str, name: str, mode: int = 0) -> Dict:
         """
         match_recent 名剑战绩
 
@@ -535,7 +566,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def match_awesome(self: Self, *, mode: int = 33, limit: int = 20) -> Dict:
+    def match_awesome(self, *, mode: int = 33, limit: int = 20) -> Dict:
         """
         match_awesome 名剑排行
 
@@ -552,7 +583,7 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def match_schools(self: Self, *, mode: int = 33) -> List[Dict]:
+    def match_schools(self, *, mode: int = 33) -> List[Dict]:
         """
         match_schools 名剑统计
 
@@ -568,7 +599,7 @@ class JX3API:
 
     @require_token
     def member_recruit(
-        self: Self, *, server: str, keyword: str | None = None, table: int = 1
+        self, *, server: str, keyword: str | None = None, table: int = 1
     ) -> Dict:
         """
         member_recruit 团队招募
@@ -588,9 +619,7 @@ class JX3API:
         )
 
     @require_token
-    def member_teacher(
-        self: Self, *, server: str, keyword: str | None = None
-    ) -> List[Dict]:
+    def member_teacher(self, *, server: str, keyword: str | None = None) -> List[Dict]:
         """
         member_teacher 师父列表
 
@@ -608,9 +637,7 @@ class JX3API:
         )
 
     @require_token
-    def member_student(
-        self: Self, *, server: str, keyword: str | None = None
-    ) -> List[Dict]:
+    def member_student(self, *, server: str, keyword: str | None = None) -> List[Dict]:
         """
         member_student 徒弟列表
 
@@ -628,7 +655,7 @@ class JX3API:
         )
 
     @require_token
-    def server_sand(self: Self, *, server: str) -> Dict:
+    def server_sand(self, *, server: str) -> Dict:
         """
         server_sand 沙盘信息
 
@@ -643,7 +670,7 @@ class JX3API:
         return self.request(endpoint="/data/server/sand", server=server)
 
     @require_token
-    def server_event(self: Self, *, limit: int = 100) -> List[Dict]:
+    def server_event(self, *, limit: int = 100) -> List[Dict]:
         """
         server_event 阵营事件
 
@@ -658,9 +685,7 @@ class JX3API:
         return self.request(endpoint="/data/server/event", limit=limit)
 
     @require_token
-    def trade_demon(
-        self: Self, *, server: str | None = None, limit: int = 10
-    ) -> List[Dict]:
+    def trade_demon(self, *, server: str | None = None, limit: int = 10) -> List[Dict]:
         """
         trade_demon 金币比例
 
@@ -677,7 +702,7 @@ class JX3API:
         return self.request(endpoint="/data/trade/demon", server=server, limit=limit)
 
     @require_token
-    def trade_record(self: Self, name: str) -> Dict:
+    def trade_record(self, name: str) -> Dict:
         """
         trade_record 物品价格
 
@@ -693,7 +718,7 @@ class JX3API:
 
     @require_token
     def tieba_item_records(
-        self: Self, *, name: str, server: str | None = "-", limit: int = 1
+        self, *, name: str, server: str | None = "-", limit: int = 1
     ) -> List[Dict]:
         """
         tieba_item_records 贴吧记录
@@ -713,7 +738,7 @@ class JX3API:
         )
 
     @require_token
-    def valuables_statistical(self: Self, *, name: str, limit: int = 20) -> List[Dict]:
+    def valuables_statistical(self, *, name: str, limit: int = 20) -> List[Dict]:
         """
         valuables_statistical 掉落统计
 
@@ -731,9 +756,7 @@ class JX3API:
         )
 
     @require_token
-    def valuables_server_statistical(
-        self: Self, *, name: str, limit: int = 30
-    ) -> List[Dict]:
+    def valuables_server_statistical(self, *, name: str, limit: int = 30) -> List[Dict]:
         """
         valuables_server_statistical 全服掉落
 
@@ -751,7 +774,7 @@ class JX3API:
         )
 
     @require_token
-    def valuables_collect(self: Self, *, server: str, num: int = 7) -> List[Dict]:
+    def valuables_collect(self, *, server: str, num: int = 7) -> List[Dict]:
         """
         valuables_collect 掉落汇总
 
@@ -767,7 +790,7 @@ class JX3API:
         return self.request(endpoint="/data/valuables/collect", server=server, num=num)
 
     @require_token
-    def server_antivice(self: Self) -> List[Dict]:
+    def server_antivice(self) -> List[Dict]:
         """
         server_antivice 诛恶事件
 
@@ -780,9 +803,7 @@ class JX3API:
         return self.request(endpoint="/data/server/antivice")
 
     @require_token
-    def rank_statistical(
-        self: Self, *, table: str, name: str, server: str
-    ) -> List[Dict]:
+    def rank_statistical(self, *, table: str, name: str, server: str) -> List[Dict]:
         """
         rank_statistical 风云榜单
 
@@ -801,7 +822,7 @@ class JX3API:
         )
 
     @require_token
-    def rank_server_statistical(self: Self, *, table: str, name: str) -> List[Dict]:
+    def rank_server_statistical(self, *, table: str, name: str) -> List[Dict]:
         """
         server_rank 全服榜单
 
@@ -821,7 +842,7 @@ class JX3API:
     @require_token
     @require_ticket
     def school_rank_statistical(
-        self: Self, *, school: str | None = "ALL", server: str | None = "ALL"
+        self, *, school: str | None = "ALL", server: str | None = "ALL"
     ) -> List[Dict]:
         """
         rank_statistical 资历榜单
@@ -840,7 +861,7 @@ class JX3API:
         )
 
     @require_token
-    def duowan_statistical(self: Self, *, server: str | None = None) -> List[Dict]:
+    def duowan_statistical(self, *, server: str | None = None) -> List[Dict]:
         """
         duowan_statistical 歪歪频道
 
@@ -859,7 +880,7 @@ class JX3API:
     ##############
 
     @require_token
-    def active_monster(self: Self, *, token: str) -> Dict:
+    def active_monster(self, *, token: str) -> Dict:
         """
         active_monster 百战首领
 
@@ -874,7 +895,7 @@ class JX3API:
         return self.request(endpoint="/data/active/monster", token=token)
 
     @require_token
-    def horse_ecords(self: Self, *, server: str | None = None) -> List[Dict]:
+    def horse_ecords(self, *, server: str | None = None) -> List[Dict]:
         """
         horse_records 的卢统计
 
@@ -889,7 +910,7 @@ class JX3API:
         return self.request(endpoint="/data/horse/records", server=server)
 
     @require_token
-    def horse_event(self: Self, *, server: str) -> Dict:
+    def horse_event(self, *, server: str) -> Dict:
         """
         horse_event 马场事件
 
@@ -904,7 +925,7 @@ class JX3API:
         return self.request(endpoint="/data/horse/event", server=server)
 
     @require_token
-    def watch_record(self: Self, *, server: str, name: str) -> List[Dict]:
+    def watch_record(self, *, server: str, name: str) -> List[Dict]:
         """
         watch_record 烟花记录
 
@@ -921,7 +942,7 @@ class JX3API:
 
     @require_token
     def watch_statistical(
-        self: Self, *, server: str, name: str, limit: int = 20
+        self, *, server: str, name: str, limit: int = 20
     ) -> List[Dict]:
         """
         watch_statistical 烟花统计
@@ -941,7 +962,7 @@ class JX3API:
         )
 
     @require_token
-    def watch_collect(self: Self, *, server: str, num: int = 7) -> List[Dict]:
+    def watch_collect(self, *, server: str, num: int = 7) -> List[Dict]:
         """
         watch_collect 烟花汇总
 
@@ -958,7 +979,7 @@ class JX3API:
 
     @require_token
     def watch_rank_statistical(
-        self: Self,
+        self,
         *,
         server: str,
         column: Literal["sender", "recipient", "name"],
@@ -992,7 +1013,7 @@ class JX3API:
     ###########
 
     @require_token
-    def chat_mixed(self: Self, *, name: str, text: str) -> Dict:
+    def chat_mixed(self, *, name: str, text: str) -> Dict:
         """
         chat_mixed 智障聊天
 
@@ -1006,7 +1027,7 @@ class JX3API:
         return self.request(endpoint="/data/chat/mixed", name=name, text=text)
 
     @require_token
-    def music_tencent(self: Self, *, name: str) -> List[Dict]:
+    def music_tencent(self, *, name: str) -> List[Dict]:
         """
         music_tencent 腾讯音乐
 
@@ -1021,7 +1042,7 @@ class JX3API:
         return self.request(endpoint="/data/music/tencent", name=name)
 
     @require_token
-    def music_netease(self: Self, *, name: str) -> List[Dict]:
+    def music_netease(self, *, name: str) -> List[Dict]:
         """
         music_netease 网易音乐
 
@@ -1036,7 +1057,7 @@ class JX3API:
         return self.request(endpoint="/data/music/netease", name=name)
 
     @require_token
-    def music_kugou(self: Self, *, name: str) -> Dict:
+    def music_kugou(self, *, name: str) -> Dict:
         """
         music_kugou 酷狗音乐
 
@@ -1051,7 +1072,7 @@ class JX3API:
         return self.request(endpoint="/data/music/kugou", name=name)
 
     @require_token
-    def fraud_detail(self: Self, *, uin: int) -> Dict:
+    def fraud_detail(self, *, uin: int) -> Dict:
         """
         fraud_detail 骗子记录
 
@@ -1065,7 +1086,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/fraud/detail", uin=uin)
 
-    def idiom_solitaire(self: Self, *, name: str) -> Dict:
+    def idiom_solitaire(self, *, name: str) -> Dict:
         """
         idiom_solitaire 成语接龙
 
@@ -1079,7 +1100,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/idiom/solitaire", name=name)
 
-    def saohua_random(self: Self) -> Dict:
+    def saohua_random(self) -> Dict:
         """
         saohua_random 撩人骚话
 
@@ -1090,7 +1111,7 @@ class JX3API:
         """
         return self.request(endpoint="/data/saohua/random")
 
-    def saohua_content(self: Self) -> Dict:
+    def saohua_content(self) -> Dict:
         """
         saohua_content 舔狗日记
 
@@ -1102,7 +1123,7 @@ class JX3API:
         return self.request(endpoint="/data/saohua/content")
 
     def sound_converter(
-        self: Self,
+        self,
         *,
         appkey: str,
         access: str,
@@ -1152,9 +1173,7 @@ class JX3API:
 
 
 class AsyncJX3API:
-    def __init__(
-        self: Self, *, token: str | None = None, ticket: str | None = None
-    ) -> None:
+    def __init__(self, *, token: str | None = None, ticket: str | None = None) -> None:
         if not token:
             logging.warning(
                 "The `token` parameter is not specified, only the free API can be used."
@@ -1163,7 +1182,7 @@ class AsyncJX3API:
         self.token = token
         self.ticket = ticket
 
-    async def request(self: Self, *, endpoint: str, **kwargs) -> Any:
+    async def request(self, *, endpoint: str, **kwargs) -> Any:
         logging.debug(f"requesting: {endpoint=}, {kwargs=}")
 
         kwargs["ticket"] = self.ticket
@@ -1172,7 +1191,7 @@ class AsyncJX3API:
             "GET",
             urljoin(base="https://www.jx3api.com", url=endpoint),
             data=json.dumps(kwargs).encode(encoding="utf-8"),
-            headers={"token": self.token} if self.token else None,
+            headers={"token": token} if (token := self.token) else {},
         ) as resp:
             if (data := await resp.json(loads=json.loads))["code"] != HTTPStatus.OK:
                 raise APIError(code=data["code"], msg=data["msg"])
@@ -1180,10 +1199,8 @@ class AsyncJX3API:
         return data["data"]
 
     @staticmethod
-    def require_token(func) -> Callable[..., Any]:
-        async def decorator(
-            self: Self, *args, **kwargs
-        ) -> Awaitable[Callable[..., Any]]:
+    def require_token(func: Callable[..., Any]) -> Callable[..., Any]:
+        async def decorator(self, *args, **kwargs) -> Awaitable[Callable[..., Any]]:
             if not self.token:
                 raise ValueError(
                     "The `token` parameter is not specified, only the free API can be used."
@@ -1193,8 +1210,8 @@ class AsyncJX3API:
         return decorator
 
     @staticmethod
-    def require_ticket(func) -> Callable[..., Any]:
-        def decorator(self: Self, *args, **kwargs) -> Awaitable[Callable[..., Any]]:
+    def require_ticket(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(self, *args, **kwargs) -> Awaitable[Callable[..., Any]]:
             if not self.ticket:
                 raise ValueError("The `ticket` parameter must be specified.")
             return func(self, *args, **kwargs)
@@ -1206,8 +1223,8 @@ class AsyncJX3API:
     ############
 
     async def active_calendar(
-        self: Self, *, server: str | None = None, num: int = 0
-    ) -> Awaitable[Dict]:
+        self, *, server: str | None = None, num: int = 0
+    ) -> Awaitable[ResponseActiveCalendar]:
         """
         active_calendar 活动日历
 
@@ -1225,7 +1242,9 @@ class AsyncJX3API:
             endpoint="/data/active/calendar", server=server, num=num
         )
 
-    async def active_list_calendar(self: Self, *, num: int = 15) -> Awaitable[Dict]:
+    async def active_list_calendar(
+        self, *, num: int = 15
+    ) -> Awaitable[ResponseActiveListCalendar]:
         """
         active_list_calendar 活动月历
 
@@ -1240,7 +1259,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/active/list/calendar", num=num)
 
-    async def active_celebrity(self: Self, *, season: int = 2) -> Awaitable[List[Dict]]:
+    async def active_celebrity(self, *, season: int = 2) -> Awaitable[List[Dict]]:
         """
         active_celebrity 行侠事件
 
@@ -1255,7 +1274,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/active/celebrity", season=season)
 
     async def exam_answer(
-        self: Self, *, match: str, limit: int = 10
+        self, *, match: str, limit: int = 10
     ) -> Awaitable[List[Dict]]:
         """
         exam_answer 科举试题
@@ -1274,7 +1293,7 @@ class AsyncJX3API:
         )
 
     async def home_flower(
-        self: Self, *, server: str, name: str | None = None, map: str | None = None
+        self, *, server: str, name: str | None = None, map: str | None = None
     ) -> Awaitable[Dict]:
         """
         home_flower 鲜花价格
@@ -1293,7 +1312,7 @@ class AsyncJX3API:
             endpoint="/data/home/flower", server=server, name=name, map=map
         )
 
-    async def home_furniture(self: Self, *, name: str) -> Awaitable[Dict]:
+    async def home_furniture(self, *, name: str) -> Awaitable[Dict]:
         """
         home_furniture 家园装饰
 
@@ -1307,7 +1326,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/home/furniture", name=name)
 
-    async def home_travel(self: Self, *, name: str) -> Awaitable[List[Dict]]:
+    async def home_travel(self, *, name: str) -> Awaitable[List[Dict]]:
         """
         home_travel 器物图谱
 
@@ -1321,7 +1340,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/home/travel", name=name)
 
-    async def news_allnews(self: Self, *, limit: int = 10) -> Awaitable[List[Dict]]:
+    async def news_allnews(self, *, limit: int = 10) -> Awaitable[List[Dict]]:
         """
         news_allnews 新闻资讯
 
@@ -1335,7 +1354,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/news/allnews", limit=limit)
 
-    async def news_announce(self: Self, *, limit: int = 10) -> Awaitable[List[Dict]]:
+    async def news_announce(self, *, limit: int = 10) -> Awaitable[List[Dict]]:
         """
         news_announce 维护公告
 
@@ -1349,7 +1368,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/news/announce", limit=limit)
 
-    async def school_toxic(self: Self, *, name: str) -> Awaitable[List[Dict]]:
+    async def school_toxic(self, *, name: str) -> Awaitable[List[Dict]]:
         """
         school_stoxic 小药清单
 
@@ -1363,7 +1382,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/school/toxic", name=name)
 
-    async def server_master(self: Self, *, name: str) -> Awaitable[Dict]:
+    async def server_master(self, *, name: str) -> Awaitable[Dict]:
         """
         server_master 搜索区服
 
@@ -1377,7 +1396,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/server/master", name=name)
 
-    async def server_check(self: Self, *, server: str | None = None) -> Awaitable[Dict]:
+    async def server_check(self, *, server: str | None = None) -> Awaitable[Dict]:
         """
         server_check 开服检查
 
@@ -1393,7 +1412,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/server/check", server=server)
 
-    async def server_status(self: Self, *, server: str) -> Awaitable[Dict]:
+    async def server_status(self, *, server: str) -> Awaitable[Dict]:
         """
         server_status 查看状态
 
@@ -1413,7 +1432,7 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def save_detailed(self: Self, *, server: str, roleId: str) -> Awaitable[Dict]:
+    async def save_detailed(self, *, server: str, roleId: str) -> Awaitable[Dict]:
         """
         save_detailed 角色更新, 数据服务
 
@@ -1432,7 +1451,7 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def role_detailed(self: Self, *, server: str, name: str) -> Awaitable[Dict]:
+    async def role_detailed(self, *, server: str, name: str) -> Awaitable[Dict]:
         """
         role_detailed 角色信息
 
@@ -1450,7 +1469,7 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def school_matrix(self: Self, *, name: str) -> Awaitable[Dict]:
+    async def school_matrix(self, *, name: str) -> Awaitable[Dict]:
         """
         school_matrix 阵法效果
 
@@ -1465,7 +1484,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/school/matrix", name=name)
 
     @require_token
-    async def school_force(self: Self, *, name: str) -> Awaitable[List[Dict]]:
+    async def school_force(self, *, name: str) -> Awaitable[List[Dict]]:
         """
         school_force 奇穴效果
 
@@ -1480,7 +1499,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/school/force", name=name)
 
     @require_token
-    async def school_skills(self: Self, *, name: str) -> Awaitable[List[Dict]]:
+    async def school_skills(self, *, name: str) -> Awaitable[List[Dict]]:
         """
         school_skills 技能效果
 
@@ -1496,7 +1515,7 @@ class AsyncJX3API:
 
     @require_token
     async def tieba_random(
-        self: Self, *, subclass: str, server: str | None = None, limit: int = 1
+        self, *, subclass: str, server: str | None = None, limit: int = 1
     ) -> Awaitable[List[Dict]]:
         """
         tieba_random 八卦帖子
@@ -1517,7 +1536,7 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def role_attribute(self: Self, *, server: str, name: str) -> Awaitable[Dict]:
+    async def role_attribute(self, *, server: str, name: str) -> Awaitable[Dict]:
         """
         role_attribute 装备属性
 
@@ -1536,7 +1555,7 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def role_teamcdlist(self: Self, *, server: str, name: str) -> Awaitable[Dict]:
+    async def role_teamcdlist(self, *, server: str, name: str) -> Awaitable[Dict]:
         """
         role_teamcdlist 副本记录
 
@@ -1554,9 +1573,7 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def luck_adventure(
-        self: Self, *, server: str, name: str
-    ) -> Awaitable[List[Dict]]:
+    async def luck_adventure(self, *, server: str, name: str) -> Awaitable[List[Dict]]:
         """
         luck_adventure 奇遇记录
 
@@ -1575,7 +1592,7 @@ class AsyncJX3API:
 
     @require_token
     async def luck_statistical(
-        self: Self, *, server: str, name: str, limit: int = 20
+        self, *, server: str, name: str, limit: int = 20
     ) -> Awaitable[List[Dict]]:
         """
         luck_statistical 奇遇统计
@@ -1596,7 +1613,7 @@ class AsyncJX3API:
 
     @require_token
     async def luck_server_statistical(
-        self: Self, *, name: str, limit: int = 20
+        self, *, name: str, limit: int = 20
     ) -> Awaitable[List[Dict]]:
         """
         luck_server_statistical 全服统计
@@ -1615,9 +1632,7 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def luck_collect(
-        self: Self, *, server: str, num: int = 7
-    ) -> Awaitable[List[Dict]]:
+    async def luck_collect(self, *, server: str, num: int = 7) -> Awaitable[List[Dict]]:
         """
         luck_collect 奇遇汇总
 
@@ -1635,7 +1650,7 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def role_achievement(
-        self: Self, *, server: str, role: str, name: str
+        self, *, server: str, role: str, name: str
     ) -> Awaitable[List[Dict]]:
         """
         role_achievement 成就百科
@@ -1657,7 +1672,7 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def match_recent(
-        self: Self, *, server: str, name: str, mode: int = 0
+        self, *, server: str, name: str, mode: int = 0
     ) -> Awaitable[Dict]:
         """
         match_recent 名剑战绩
@@ -1681,7 +1696,7 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def match_awesome(
-        self: Self, *, mode: int = 33, limit: int = 20
+        self, *, mode: int = 33, limit: int = 20
     ) -> Awaitable[Dict]:
         """
         match_awesome 名剑排行
@@ -1701,7 +1716,7 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def match_schools(self: Self, *, mode: int = 33) -> Awaitable[List[Dict]]:
+    async def match_schools(self, *, mode: int = 33) -> Awaitable[List[Dict]]:
         """
         match_schools 名剑统计
 
@@ -1717,7 +1732,7 @@ class AsyncJX3API:
 
     @require_token
     async def member_recruit(
-        self: Self, *, server: str, keyword: str | None = None, table: int = 1
+        self, *, server: str, keyword: str | None = None, table: int = 1
     ) -> Awaitable[Dict]:
         """
         member_recruit 团队招募
@@ -1738,7 +1753,7 @@ class AsyncJX3API:
 
     @require_token
     async def member_teacher(
-        self: Self, *, server: str, keyword: str | None = None
+        self, *, server: str, keyword: str | None = None
     ) -> Awaitable[List[Dict]]:
         """
         member_teacher 师父列表
@@ -1758,7 +1773,7 @@ class AsyncJX3API:
 
     @require_token
     async def member_student(
-        self: Self, *, server: str, keyword: str | None = None
+        self, *, server: str, keyword: str | None = None
     ) -> Awaitable[List[Dict]]:
         """
         member_student 徒弟列表
@@ -1777,7 +1792,7 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def server_sand(self: Self, *, server: str) -> Awaitable[Dict]:
+    async def server_sand(self, *, server: str) -> Awaitable[Dict]:
         """
         server_sand 沙盘信息
 
@@ -1792,7 +1807,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/server/sand", server=server)
 
     @require_token
-    async def server_event(self: Self, *, limit: int = 100) -> Awaitable[List[Dict]]:
+    async def server_event(self, *, limit: int = 100) -> Awaitable[List[Dict]]:
         """
         server_event 阵营事件
 
@@ -1808,7 +1823,7 @@ class AsyncJX3API:
 
     @require_token
     async def trade_demon(
-        self: Self, *, server: str | None = None, limit: int = 10
+        self, *, server: str | None = None, limit: int = 10
     ) -> Awaitable[List[Dict]]:
         """
         trade_demon 金币比例
@@ -1828,7 +1843,7 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def trade_record(self: Self, name: str) -> Awaitable[Dict]:
+    async def trade_record(self, name: str) -> Awaitable[Dict]:
         """
         trade_record 物品价格
 
@@ -1844,7 +1859,7 @@ class AsyncJX3API:
 
     @require_token
     async def tieba_item_records(
-        self: Self, *, name: str, server: str | None = "-", limit: int = 1
+        self, *, name: str, server: str | None = "-", limit: int = 1
     ) -> Awaitable[List[Dict]]:
         """
         tieba_item_records 贴吧记录
@@ -1865,7 +1880,7 @@ class AsyncJX3API:
 
     @require_token
     async def valuables_statistical(
-        self: Self, *, name: str, limit: int = 20
+        self, *, name: str, limit: int = 20
     ) -> Awaitable[List[Dict]]:
         """
         valuables_statistical 掉落统计
@@ -1885,7 +1900,7 @@ class AsyncJX3API:
 
     @require_token
     async def valuables_server_statistical(
-        self: Self, *, name: str, limit: int = 30
+        self, *, name: str, limit: int = 30
     ) -> Awaitable[List[Dict]]:
         """
         valuables_server_statistical 全服掉落
@@ -1905,7 +1920,7 @@ class AsyncJX3API:
 
     @require_token
     async def valuables_collect(
-        self: Self, *, server: str, num: int = 7
+        self, *, server: str, num: int = 7
     ) -> Awaitable[List[Dict]]:
         """
         valuables_collect 掉落汇总
@@ -1924,7 +1939,7 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def server_antivice(self: Self) -> Awaitable[List[Dict]]:
+    async def server_antivice(self) -> Awaitable[List[Dict]]:
         """
         server_antivice 诛恶事件
 
@@ -1938,7 +1953,7 @@ class AsyncJX3API:
 
     @require_token
     async def rank_statistical(
-        self: Self, *, table: str, name: str, server: str
+        self, *, table: str, name: str, server: str
     ) -> Awaitable[List[Dict]]:
         """
         rank_statistical 风云榜单
@@ -1959,7 +1974,7 @@ class AsyncJX3API:
 
     @require_token
     async def rank_server_statistical(
-        self: Self, *, table: str, name: str
+        self, *, table: str, name: str
     ) -> Awaitable[List[Dict]]:
         """
         server_rank 全服榜单
@@ -1980,7 +1995,7 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def school_rank_statistical(
-        self: Self, *, school: str | None = "ALL", server: str | None = "ALL"
+        self, *, school: str | None = "ALL", server: str | None = "ALL"
     ) -> Awaitable[List[Dict]]:
         """
         rank_statistical 资历榜单
@@ -2000,7 +2015,7 @@ class AsyncJX3API:
 
     @require_token
     async def duowan_statistical(
-        self: Self, *, server: str | None = None
+        self, *, server: str | None = None
     ) -> Awaitable[List[Dict]]:
         """
         duowan_statistical 歪歪频道
@@ -2020,7 +2035,7 @@ class AsyncJX3API:
     ##############
 
     @require_token
-    async def active_monster(self: Self, *, token: str) -> Awaitable[Dict]:
+    async def active_monster(self, *, token: str) -> Awaitable[Dict]:
         """
         active_monster 百战首领
 
@@ -2035,9 +2050,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/active/monster", token=token)
 
     @require_token
-    async def horse_ecords(
-        self: Self, *, server: str | None = None
-    ) -> Awaitable[List[Dict]]:
+    async def horse_ecords(self, *, server: str | None = None) -> Awaitable[List[Dict]]:
         """
         horse_records 的卢统计
 
@@ -2052,7 +2065,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/horse/records", server=server)
 
     @require_token
-    async def horse_event(self: Self, *, server: str) -> Awaitable[Dict]:
+    async def horse_event(self, *, server: str) -> Awaitable[Dict]:
         """
         horse_event 马场事件
 
@@ -2067,9 +2080,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/horse/event", server=server)
 
     @require_token
-    async def watch_record(
-        self: Self, *, server: str, name: str
-    ) -> Awaitable[List[Dict]]:
+    async def watch_record(self, *, server: str, name: str) -> Awaitable[List[Dict]]:
         """
         watch_record 烟花记录
 
@@ -2088,7 +2099,7 @@ class AsyncJX3API:
 
     @require_token
     async def watch_statistical(
-        self: Self, *, server: str, name: str, limit: int = 20
+        self, *, server: str, name: str, limit: int = 20
     ) -> Awaitable[List[Dict]]:
         """
         watch_statistical 烟花统计
@@ -2109,7 +2120,7 @@ class AsyncJX3API:
 
     @require_token
     async def watch_collect(
-        self: Self, *, server: str, num: int = 7
+        self, *, server: str, num: int = 7
     ) -> Awaitable[List[Dict]]:
         """
         watch_collect 烟花汇总
@@ -2129,7 +2140,7 @@ class AsyncJX3API:
 
     @require_token
     async def watch_rank_statistical(
-        self: Self,
+        self,
         *,
         server: str,
         column: Literal["sender", "recipient", "name"],
@@ -2163,7 +2174,7 @@ class AsyncJX3API:
     ###########
 
     @require_token
-    async def chat_mixed(self: Self, *, name: str, text: str) -> Awaitable[Dict]:
+    async def chat_mixed(self, *, name: str, text: str) -> Awaitable[Dict]:
         """
         chat_mixed 智障聊天
 
@@ -2177,7 +2188,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/chat/mixed", name=name, text=text)
 
     @require_token
-    async def music_tencent(self: Self, *, name: str) -> Awaitable[List[Dict]]:
+    async def music_tencent(self, *, name: str) -> Awaitable[List[Dict]]:
         """
         music_tencent 腾讯音乐
 
@@ -2192,7 +2203,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/music/tencent", name=name)
 
     @require_token
-    async def music_netease(self: Self, *, name: str) -> Awaitable[List[Dict]]:
+    async def music_netease(self, *, name: str) -> Awaitable[List[Dict]]:
         """
         music_netease 网易音乐
 
@@ -2207,7 +2218,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/music/netease", name=name)
 
     @require_token
-    async def music_kugou(self: Self, *, name: str) -> Awaitable[Dict]:
+    async def music_kugou(self, *, name: str) -> Awaitable[Dict]:
         """
         music_kugou 酷狗音乐
 
@@ -2222,7 +2233,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/music/kugou", name=name)
 
     @require_token
-    async def fraud_detail(self: Self, *, uin: int) -> Awaitable[Dict]:
+    async def fraud_detail(self, *, uin: int) -> Awaitable[Dict]:
         """
         fraud_detail 骗子记录
 
@@ -2236,7 +2247,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/fraud/detail", uin=uin)
 
-    async def idiom_solitaire(self: Self, *, name: str) -> Awaitable[Dict]:
+    async def idiom_solitaire(self, *, name: str) -> Awaitable[Dict]:
         """
         idiom_solitaire 成语接龙
 
@@ -2250,7 +2261,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/idiom/solitaire", name=name)
 
-    async def saohua_random(self: Self) -> Awaitable[Dict]:
+    async def saohua_random(self) -> Awaitable[Dict]:
         """
         saohua_random 撩人骚话
 
@@ -2261,7 +2272,7 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/saohua/random")
 
-    async def saohua_content(self: Self) -> Awaitable[Dict]:
+    async def saohua_content(self) -> Awaitable[Dict]:
         """
         saohua_content 舔狗日记
 
@@ -2273,7 +2284,7 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/saohua/content")
 
     async def sound_converter(
-        self: Self,
+        self,
         *,
         appkey: str,
         access: str,
@@ -2326,9 +2337,11 @@ class AsyncJX3API:
     #############
 
     @require_token
-    async def socket(self: Self) -> AsyncGenerator[Dict, None]:
+    async def socket(self) -> AsyncGenerator[Dict, None]:
         async with (
-            aiohttp.ClientSession(headers={"token": self.token}) as session,
+            aiohttp.ClientSession(
+                headers={"token": token} if (token := self.token) else {}
+            ) as session,
             session.ws_connect("wss://socket.nicemoe.cn") as ws,
         ):
             logging.info("websocket connected")
