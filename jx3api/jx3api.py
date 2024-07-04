@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import closing
 from functools import partial
 from http import HTTPStatus
@@ -24,6 +25,9 @@ from .response import (
     ResponseActiveCelebrity,
     ResponseActiveListCalendar,
     ResponseExamAnswer,
+    ResponseHomeFurniture,
+    ResponseHomeTravel,
+    ResponseNewsAllNews,
 )
 
 try:
@@ -54,13 +58,13 @@ class JX3API:
         token: Annotated[str | None, "推栏 token"] = None,
         ticket: Annotated[str | None, "站点标识"] = None,
     ) -> None:
-        if not token:
+        self.token = token or os.getenv("JX3API_TOKEN")
+        self.ticket = ticket or os.getenv("JX3API_TICKET")
+
+        if not self.token:
             logging.warning(
                 "The `token` parameter is not specified, only the free API can be used."
             )
-
-        self.token = token
-        self.ticket = ticket
 
     def request(self, *, endpoint: str, **kwargs) -> Any:
         logging.debug(f"requesting: {endpoint=}, {kwargs=}")
@@ -197,7 +201,7 @@ class JX3API:
             endpoint="/data/home/flower", server=server, name=name, map=map
         )
 
-    def home_furniture(self, *, name: str) -> Dict:
+    def home_furniture(self, *, name: str) -> ResponseHomeFurniture:
         """
         home_furniture 家园装饰
 
@@ -207,11 +211,11 @@ class JX3API:
             name (str): 装饰名称，查找该装饰的详细记录。
 
         Returns:
-            Dict: 装饰详情。
+            ResponseHomeFurniture: 装饰详情。
         """
         return self.request(endpoint="/data/home/furniture", name=name)
 
-    def home_travel(self, *, name: str) -> List[Dict]:
+    def home_travel(self, *, name: str) -> Sequence[ResponseHomeTravel]:
         """
         home_travel 器物图谱
 
@@ -221,11 +225,11 @@ class JX3API:
             name (str, optional): 地图名称，查找该地图的家具。
 
         Returns:
-            List[Dict]: 地图产出装饰。
+            Sequence[ResponseHomeTravel]: 地图产出装饰。
         """
         return self.request(endpoint="/data/home/travel", name=name)
 
-    def news_allnews(self, *, limit: int = 10) -> List[Dict]:
+    def news_allnews(self, *, limit: int = 10) -> Sequence[ResponseNewsAllNews]:
         """
         news_allnews 新闻资讯
 
@@ -235,7 +239,7 @@ class JX3API:
             limit (int, optional): 单页数量，设置返回的数量，默认值 ``10``。
 
         Returns:
-            List[Dict]: 官方最新公告及新闻
+            Sequence[ResponseNewsAllNews]: 官方最新公告及新闻
         """
         return self.request(endpoint="/data/news/allnews", limit=limit)
 
