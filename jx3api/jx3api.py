@@ -722,7 +722,7 @@ class JX3API:
 
     @require_token
     def tieba_item_records(
-        self, *, name: str, server: str | None = "-", limit: int = 1
+        self, *, name: str, server: str | None = "", limit: int = 1
     ) -> List[Dict]:
         """
         tieba_item_records 贴吧记录
@@ -1863,7 +1863,7 @@ class AsyncJX3API:
 
     @require_token
     async def tieba_item_records(
-        self, *, name: str, server: str | None = "-", limit: int = 1
+        self, *, name: str, server: str | None = "", limit: int = 1
     ) -> Awaitable[List[Dict]]:
         """
         tieba_item_records 贴吧记录
