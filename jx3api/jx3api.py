@@ -1228,7 +1228,7 @@ class AsyncJX3API:
 
     async def active_calendar(
         self, *, server: str | None = None, num: int = 0
-    ) -> Awaitable[ResponseActiveCalendar]:
+    ) -> Annotated[Awaitable[ResponseActiveCalendar], "今天、明天、后天、日常任务"]:
         """
         active_calendar 活动日历
 
@@ -1248,7 +1248,7 @@ class AsyncJX3API:
 
     async def active_list_calendar(
         self, *, num: int = 15
-    ) -> Awaitable[ResponseActiveListCalendar]:
+    ) -> Annotated[Awaitable[ResponseActiveListCalendar], "预测每天的日常任务"]:
         """
         active_list_calendar 活动月历
 
@@ -1263,7 +1263,11 @@ class AsyncJX3API:
         """
         return await self.request(endpoint="/data/active/list/calendar", num=num)
 
-    async def active_celebrity(self, *, season: int = 2) -> Awaitable[List[Dict]]:
+    async def active_celebrity(
+        self, *, season: int = 2
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseActiveCelebrity]], "当前时间的楚天社/云从社进度"
+    ]:
         """
         active_celebrity 行侠事件
 
