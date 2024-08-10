@@ -10,7 +10,6 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
-    List,
     Literal,
     Sequence,
 )
@@ -22,12 +21,53 @@ import aiohttp
 from .exception import APIError
 from .response import (
     ResponseActiveCalendar,
-    ResponseActiveCelebrity,
+    ResponseActiveCelebs,
     ResponseActiveListCalendar,
+    ResponseActiveMonster,
     ResponseExamAnswer,
+    ResponseFireworkCollect,
+    ResponseFireworkRankStatistical,
+    ResponseFireworkRecord,
+    ResponseFireworkStatistical,
+    ResponseHomeFlower,
     ResponseHomeFurniture,
     ResponseHomeTravel,
-    ResponseNewsAllNews,
+    ResponseHorseRanch,
+    ResponseHorseRecord,
+    ResponseLuckAdventure,
+    ResponseLuckCollect,
+    ResponseLuckServerStatistical,
+    ResponseLuckStatistical,
+    ResponseMatchAwesome,
+    ResponseMatchRecent,
+    ResponseMatchSchools,
+    ResponseMemberRecruit,
+    ResponseMemberStudent,
+    ResponseMemberTeacher,
+    ResponseNewsAllnews,
+    ResponseNewsAnnounce,
+    ResponseRankServerStatistical,
+    ResponseRankStatistical,
+    ResponseRoleAchievement,
+    ResponseRoleDetailed,
+    ResponseRoleTeamCdList,
+    ResponseSaveDetailed,
+    ResponseSchoolForce,
+    ResponseSchoolMatrix,
+    ResponseSchoolRankStatistical,
+    ResponseSchoolSkills,
+    ResponseServerAntivice,
+    ResponseServerCheck,
+    ResponseServerEvent,
+    ResponseServerMaster,
+    ResponseServerSand,
+    ResponseServerStatus,
+    ResponseTiebaItemRecords,
+    ResponseTiebaRandom,
+    ResponseTradeDemon,
+    ResponseTradeRecord,
+    ResponseValuablesServerStatistical,
+    ResponseValuablesStatistical,
 )
 
 try:
@@ -44,10 +84,7 @@ except ImportError:
 
 logging.basicConfig(
     level=logging.INFO,
-    format=(
-        "[%(asctime)s][%(levelname)s]"
-        "[%(module)s:%(funcName)s:%(lineno)d]: %(message)s"
-    ),
+    format="[%(asctime)s][%(levelname)s][%(module)s:%(funcName)s:%(lineno)d]: %(message)s",
 )
 
 
@@ -57,9 +94,12 @@ class JX3API:
         *,
         token: Annotated[str | None, "推栏 token"] = None,
         ticket: Annotated[str | None, "站点标识"] = None,
+        base_url: str = "https://www.jx3api.com",
     ) -> None:
         self.token = token or os.getenv("JX3API_TOKEN")
         self.ticket = ticket or os.getenv("JX3API_TICKET")
+
+        self.base_url = base_url
 
         if not self.token:
             logging.warning(
@@ -72,7 +112,7 @@ class JX3API:
         kwargs["ticket"] = self.ticket
 
         req = Request(
-            urljoin(base="https://www.jx3api.com", url=endpoint),
+            urljoin(base=self.base_url, url=endpoint),
             data=json.dumps(kwargs).encode(encoding="utf-8"),
             headers={"token": token} if (token := self.token) else {},
         )
@@ -90,6 +130,7 @@ class JX3API:
                 raise ValueError(
                     "The `token` parameter is not specified, only the free API can be used."
                 )
+
             return func(self, *args, **kwargs)
 
         return decorator
@@ -99,6 +140,7 @@ class JX3API:
         def decorator(self, *args, **kwargs) -> Callable[..., Any]:
             if not self.ticket:
                 raise ValueError("The `ticket` parameter must be specified.")
+
             return func(self, *args, **kwargs)
 
         return decorator
@@ -110,18 +152,21 @@ class JX3API:
     def active_calendar(
         self,
         *,
-        server: Annotated[str | None, "区服名称"] = None,
-        num: Annotated[int, "预测时间"] = 0,
+        server: Annotated[str | None, "区服名称，查找该区服的记录。"] = None,
+        num: Annotated[
+            int,
+            "指定日期，查询指定日期的日常，默认值 : ``0`` 为当天，``1`` 为明天，以此类推。",
+        ] = 0,
     ) -> Annotated[ResponseActiveCalendar, "今天、明天、后天、日常任务"]:
         """
         active_calendar 活动日历
 
         今天、明天、后天、日常任务。
-        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键与值。
+        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键对值。
 
         Args:
             server (str, optional): 区服名称，查找该区服的记录。
-            num (int, optional): 预测时间，预测指定时间的日常，默认值: ``0`` 为当天，``1`` 为明天，以此类推。
+            num (int, optional): 指定日期，查询指定日期的日常，默认值 : ``0`` 为当天，``1`` 为明天，以此类推。
 
         Returns:
             ResponseActiveCalendar: 今天、明天、后天、日常任务。
@@ -129,371 +174,445 @@ class JX3API:
         return self.request(endpoint="/data/active/calendar", server=server, num=num)
 
     def active_list_calendar(
-        self, *, num: Annotated[int, "预测时间"] = 15
+        self,
+        *,
+        num: Annotated[
+            int, "预测时间，查询指定时间内的月历，默认值 : ``15`` 为前后15天的月历"
+        ] = 15,
     ) -> Annotated[ResponseActiveListCalendar, "预测每天的日常任务"]:
         """
         active_list_calendar 活动月历
 
         预测每天的日常任务。
-        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键与值。
+        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键对值。
 
         Args:
-            num (int, optional): 预测时间，预测指定时间范围内的活动，默认值 : ``15`` 为当天，``1`` 为明天。
+            num (int, optional): 预测时间，查询指定时间内的月历，默认值 : ``15`` 为前后15天的月历。
 
         Returns:
             ResponseActiveListCalendar: 预测每天的日常任务。
         """
         return self.request(endpoint="/data/active/list/calendar", num=num)
 
-    def active_celebrity(
-        self, *, season: Annotated[int, "第几赛季"] = 2
-    ) -> Annotated[Sequence[ResponseActiveCelebrity], "当前时间的楚天社/云从社进度"]:
+    def active_celebs(
+        self,
+        *,
+        name: Annotated[str, "名称，查询指定事件的记录"],
+    ) -> Annotated[Sequence[ResponseActiveCelebs], "当前时间的楚天社/云从社进度"]:
         """
-        active_celebrity 行侠事件
+        active_celebs 行侠事件
 
         当前时间的楚天社/云从社进度。
 
         Args:
-            season (int, optional): 第几赛季，用于返回楚天社或云从社的判断条件，可选值：``1-3``。
+            name (str): 名称，查询指定事件的记录。
 
         Returns:
-            Sequence[ResponseActiveCelebrity]: 当前时间的楚天社/云从社进度。
+            Sequence[ResponseActiveCelebs]: 当前时间的楚天社/云从社进度。
         """
-        return self.request(endpoint="/data/active/celebrity", season=season)
+        return self.request(endpoint="/data/active/celebs", name=name)
 
     def exam_answer(
         self,
         *,
-        match: Annotated[str, "科举试题"],
-        limit: Annotated[int, "设置返回的数量"] = 10,
-    ) -> Sequence[ResponseExamAnswer]:
+        subject: Annotated[str, "科举试题，支持首字母，支持模糊查询"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[Sequence[ResponseExamAnswer], "科举答题"]:
         """
         exam_answer 科举试题
 
-        科举答案。
+        科举答题
 
         Args:
-            match (str): 科举试题，支持首字母，支持模糊查询。
-            limit (int, optional): 设置返回的数量，默认值 ``10``。
+            subject (str): 科举试题，支持首字母，支持模糊查询。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            Sequence[ResponseExamAnswer]: 科举试题答案。
+            Sequence[ResponseExamAnswer]: 科举答题。
         """
-        return self.request(endpoint="/data/exam/answer", match=match, limit=limit)
+        return self.request(endpoint="/data/exam/answer", subject=subject, limit=limit)
 
-    def home_flower(
-        self, *, server: str, name: str | None = None, map: str | None = None
-    ) -> Dict:
-        """
-        home_flower 鲜花价格
-
-        家园鲜花最高价格线路。
-
-        Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str, optional): 鲜花名称，查找该鲜花的记录。
-            map (str, optional): 地图名称，查找该地图的记录。
-
-        Returns:
-            Dict: 鲜花价格。
-        """
-        return self.request(
-            endpoint="/data/home/flower", server=server, name=name, map=map
-        )
-
-    def home_furniture(self, *, name: str) -> ResponseHomeFurniture:
+    def home_furniture(
+        self,
+        *,
+        name: Annotated[str, "指定装饰，查找该装饰的详细记录"],
+    ) -> Annotated[ResponseHomeFurniture, "装饰详情"]:
         """
         home_furniture 家园装饰
 
-        装饰详情。
+        装饰详情
 
         Args:
-            name (str): 装饰名称，查找该装饰的详细记录。
+            name (str): 指定装饰，查找该装饰的详细记录。
 
         Returns:
             ResponseHomeFurniture: 装饰详情。
         """
         return self.request(endpoint="/data/home/furniture", name=name)
 
-    def home_travel(self, *, name: str) -> Sequence[ResponseHomeTravel]:
+    def home_travel(
+        self,
+        *,
+        name: Annotated[str, "地图，查找该地图的装饰产出"],
+    ) -> Annotated[Sequence[ResponseHomeTravel], "器物谱地图产出装饰"]:
         """
         home_travel 器物图谱
 
-        器物谱地图产出装饰。
+        器物谱地图产出装饰
 
         Args:
-            name (str, optional): 地图名称，查找该地图的家具。
+            name (str): 地图，查找该地图的装饰产出。
 
         Returns:
-            Sequence[ResponseHomeTravel]: 地图产出装饰。
+            Sequence[ResponseHomeTravel]: 器物谱地图产出装饰。
         """
         return self.request(endpoint="/data/home/travel", name=name)
 
-    def news_allnews(self, *, limit: int = 10) -> Sequence[ResponseNewsAllNews]:
+    def news_allnews(
+        self,
+        *,
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[Sequence[ResponseNewsAllnews], "官方最新公告及新闻"]:
         """
         news_allnews 新闻资讯
 
-        官方最新公告及新闻。
+        官方最新公告及新闻
 
         Args:
-            limit (int, optional): 单页数量，设置返回的数量，默认值 ``10``。
+            limit (int, optional): 限制查询结果的数量，默认值 10.
 
         Returns:
-            Sequence[ResponseNewsAllNews]: 官方最新公告及新闻
+            Sequence[ResponseNewsAllnews]: 官方最新公告及新闻。
         """
         return self.request(endpoint="/data/news/allnews", limit=limit)
 
-    def news_announce(self, *, limit: int = 10) -> List[Dict]:
+    def news_announce(
+        self,
+        *,
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[Sequence[ResponseNewsAnnounce], "官方最新维护公告"]:
         """
         news_announce 维护公告
 
-        官方最新公告及新闻。
+        官方最新维护公告
 
         Args:
-            limit (int, optional): 单页数量，设置返回的数量，默认值 ``10``。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            List[Dict]: 官方最新公告及新闻。
+            Sequence[ResponseNewsAnnounce]: 官方最新维护公告。
         """
         return self.request(endpoint="/data/news/announce", limit=limit)
 
-    def school_toxic(self, *, name: str) -> List[Dict]:
-        """
-        school_stoxic 小药清单
-
-        推荐的小药清单。
-
-        Args:
-            name (str): 心法名称，查找该心法的记录。
-
-        Returns:
-            List[Dict]: 推荐的小药清单。
-        """
-        return self.request(endpoint="/data/school/toxic", name=name)
-
-    def server_master(self, *, name: str) -> Dict:
+    def server_master(
+        self,
+        *,
+        name: Annotated[str, "指定区服，查找该区服的相关记录"],
+    ) -> Annotated[ResponseServerMaster, "简称搜索主次服务器"]:
         """
         server_master 搜索区服
 
-        简称搜索主次服务器。
+        简称搜索主次服务器
 
         Args:
-            name (str): 区服名称，查找该区服的记录。
+            name (str): 指定区服，查找该区服的相关记录。
 
         Returns:
-            Dict: 主次服务器信息。
+            ResponseServerMaster: 简称搜索主次服务器。
         """
         return self.request(endpoint="/data/server/master", name=name)
 
-    def server_check(self, *, server: str | None = None) -> Dict:
+    def server_check(
+        self,
+        *,
+        server: Annotated[
+            str | None,
+            "可选的服务器名称，查找该区服的相关记录；未输入区服名称或输入错误区服名称时，将返回全部区服的状态数据，可用于开服监控(支持轮询请求)",
+        ] = None,
+    ) -> Annotated[ResponseServerCheck, "服务器当前状态 [ 已开服/维护中 ]"]:
         """
         server_check 开服检查
 
-        服务器当前状态 ``[ 已开服/维护中 ]``。
-        未输入区服名称或输入错误区服名称时，将返回全部区服的状态数据，可用于开服监控(支持轮询请求)。
-        刷新频率 : ``30`` 秒。
+        服务器当前状态 [ 已开服/维护中 ]
 
         Args:
-            server (str, optional): 区服名称，查找该区服的记录。
+            server (str, optional): 可选的服务器名称，查找该区服的相关记录；未输入区服名称或输入错误区服名称时，将返回全部区服的状态数据，可用于开服监控(支持轮询请求)。
 
         Returns:
-            Dict: 服务器当前状态 ```[ 维护/正常/繁忙/爆满 ]```。
+            ResponseServerCheck: 服务器当前状态 [ 已开服/维护中 ]
         """
         return self.request(endpoint="/data/server/check", server=server)
 
-    def server_status(self, *, server: str) -> Dict:
+    def server_status(
+        self,
+        *,
+        server: Annotated[str, "指定区服，查找该区服的相关记录"],
+    ) -> Annotated[ResponseServerStatus, "服务器当前状态"]:
         """
         server_status 查看状态
 
-        服务器当前状态 ```[ 维护/正常/繁忙/爆满 ]```。
+        服务器当前状态 [ 维护/正常/繁忙/爆满 ]
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 指定区服，查找该区服的相关记录。
 
         Returns:
-            Dict: 服务器当前状态 ```[ 维护/正常/繁忙/爆满 ]```。
+            ResponseServerStatus: 服务器当前状态。
         """
         return self.request(endpoint="/data/server/status", server=server)
 
-    #############
-    # VIP I API #
-    #############
+    def home_flower(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str | None, "鲜花，查找该鲜花的相关记录"] = None,
+        map: Annotated[str | None, "地图，查找该地图的相关记录"] = None,
+    ) -> Annotated[ResponseHomeFlower, "家园鲜花最高价格线路"]:
+        """
+        home_flower 鲜花价格
+
+        家园鲜花最高价格线路。
+
+        Args:
+            server (str): 区服，查找该区服的相关记录。
+            name (str, optional): 鲜花，查找该鲜花的相关记录。
+            map (str, optional): 地图，查找该地图的相关记录。
+
+        Returns:
+            ResponseHomeFlowerData: 家园鲜花最高价格线路。
+        """
+        return self.request(
+            endpoint="/data/home/flower", server=server, name=name, map=map
+        )
+
+    ##########
+    # VIP  I #
+    ##########
 
     @require_token
     @require_ticket
-    def save_detailed(self, *, server: str, roleId: str) -> Dict:
+    def save_detailed(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        roleid: Annotated[str, "角色UID，保存该角色的详细记录"],
+    ) -> Annotated[ResponseSaveDetailed, "自动更新角色信息"]:
         """
-        save_detailed 角色更新, 数据服务
+        save_detailed 角色更新
 
         自动更新角色信息。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            roleId (str): 角色数字标识，查找该标识的记录。
+            server (str): 区服，查找该区服的相关记录。
+            roleid (str): 角色UID，保存该角色的详细记录。
 
         Returns:
-            Dict: 角色信息。
+            ResponseSaveDetailed: 自动更新角色信息。
         """
         return self.request(
-            endpoint="/data/save/detailed", server=server, roleid=roleId
+            endpoint="/data/save/detailed", server=server, roleid=roleid
         )
 
     @require_token
     @require_ticket
-    def role_detailed(self, *, server: str, name: str) -> Dict:
+    def role_detailed(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找目标角色的相关记录"],
+    ) -> Annotated[ResponseRoleDetailed, "角色详细信息"]:
         """
         role_detailed 角色信息
 
-        角色详细信息。
+        角色详细信息
 
         Args:
-            server (str): 区服名称，查找目标区服的记录。
-            name (str): 角色名称，查找目标角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找目标角色的相关记录。
 
         Returns:
-            Dict: 角色详细信息。
+            ResponseRoleDetailed: 角色详细信息。
         """
         return self.request(endpoint="/data/role/detailed", server=server, name=name)
 
     @require_token
-    def school_matrix(self, *, name: str) -> Dict:
+    def school_matrix(
+        self, *, name: Annotated[str, "心法名称，查找该心法的相关记录"]
+    ) -> Annotated[ResponseSchoolMatrix, "职业阵眼效果"]:
         """
-        school_matrix 阵法效果
+        school_matrix 阵眼效果
 
-        职业阵眼效果。
+        职业阵眼效果
 
         Args:
-            name (str): 心法名称，查找该心法的记录。
+            name (str): 心法名称，查找该心法的相关记录。
 
         Returns:
-            Dict: 职业阵眼效果。
+            ResponseSchoolMatrix: 职业阵眼效果。
         """
         return self.request(endpoint="/data/school/matrix", name=name)
 
     @require_token
-    def school_force(self, *, name: str) -> List[Dict]:
+    def school_force(
+        self, *, name: Annotated[str, "心法名称，查找该心法的相关记录"]
+    ) -> Annotated[Sequence[ResponseSchoolForce], "奇穴详细效果"]:
         """
         school_force 奇穴效果
 
-        奇穴详细效果。
+        奇穴详细效果
 
         Args:
-            name (str): 心法名称，查找该心法的记录。
+            name (str): 心法名称，查找该心法的相关记录。
 
         Returns:
-            List[Dict]: 奇穴详细效果。
+            Sequence[ResponseSchoolForce]: 奇穴详细效果。
         """
         return self.request(endpoint="/data/school/force", name=name)
 
     @require_token
-    def school_skills(self, *, name: str) -> List[Dict]:
+    def school_skills(
+        self, *, name: Annotated[str, "心法名称，查找该心法的相关记录"]
+    ) -> Annotated[Sequence[ResponseSchoolSkills], "技能详细效果"]:
         """
         school_skills 技能效果
 
-        技能详细效果。
+        技能详细效果
 
         Args:
-            name (str): 心法名称，查找该心法的记录。
+            name (str): 心法名称，查找该心法的相关记录。
 
         Returns:
-            List[Dict]: 技能详细信息。
+            Sequence[ResponseSchoolSkills]: 技能详细效果。
         """
         return self.request(endpoint="/data/school/skills", name=name)
 
     @require_token
     def tieba_random(
-        self, *, subclass: str, server: str | None = None, limit: int = 1
-    ) -> List[Dict]:
+        self,
+        *,
+        class_: Annotated[
+            str,
+            "帖子分类，可选范围：``818`` ``616`` ``鬼网三`` ``鬼网3`` ``树洞`` ``记录`` ``教程`` ``街拍`` ``故事`` ``避雷`` ``吐槽`` ``提问``",
+        ],
+        server: Annotated[
+            str, "区服名称，查找该区服的相关记录，默认值：``-`` 为全区服"
+        ] = "-",
+        limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
+    ) -> Annotated[Sequence[ResponseTiebaRandom], "随机搜索贴吧 : 818/616...."]:
         """
         tieba_random 八卦帖子
 
-        禁止轮询，随机搜索贴吧: 818 / 616 。
+        禁止轮询，随机搜索贴吧 : 818/616....
 
         Args:
-            subclass (str): 帖子分类，可选范围：``818`` ``616`` ``鬼网三`` ``鬼网3`` ``树洞`` ``记录`` ``教程`` ``街拍`` ``故事`` ``避雷`` ``吐槽`` ``提问``。
-            server (str, optional): 区服名称，查找该区服的记录。
-            limit (int, optional): 单页数量，单页返回的数量。
+            class (str): 帖子分类，可选范围：``818`` ``616`` ``鬼网三`` ``鬼网3`` ``树洞`` ``记录`` ``教程`` ``街拍`` ``故事`` ``避雷`` ``吐槽`` ``提问``
+            server (str, optional): 区服名称，查找该区服的相关记录，默认值：``-`` 为全区服。
+            limit (int, optional): 限制查询结果的数量，默认值 ``10``。
 
         Returns:
-            List[Dict]: 该服务器随机选择的结果。
+            Sequence[ResponseTiebaRandom]: 随机搜索贴吧 : 818/616....
         """
         return self.request(
-            endpoint="/data/tieba/random", subclass=subclass, server=server, limit=limit
+            endpoint="/data/tieba/random", class_=class_, server=server, limit=limit
         )
 
     @require_token
     @require_ticket
-    def role_attribute(self, *, server: str, name: str) -> Dict:
+    def role_attribute(
+        self, server: Annotated[str, "服务器"], name: Annotated[str, "角色名"]
+    ) -> Dict:
         """
-        role_attribute 装备属性
+        role_attribute 角色装备
 
-        角色装备属性详情。
+        角色装备属性详情
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
+            server (str): 服务器。
+            name (str): 角色名。
 
         Returns:
-            Dict: 装备属性详细信息。
+            Dict: 角色装备属性详情。
         """
-        return self.request(endpoint="/data/role/attribute", server=server, name=name)
+        return self.request(endpoint="/role/attribute", server=server, name=name)
 
     @require_token
     @require_ticket
-    def role_teamcdlist(self, *, server: str, name: str) -> Dict:
+    def role_team_cd_list(
+        self,
+        *,
+        server: Annotated[str, "区服名称，查找该区服的记录"],
+        name: Annotated[str, "角色名称，查找该角色的记录"],
+    ) -> Annotated[ResponseRoleTeamCdList, "角色副本记录"]:
         """
-        role_teamcdlist 副本记录
+        role_team_cd_list 副本记录
 
-        角色副本记录。
+        角色副本记录
 
         Args:
             server (str): 区服名称，查找该区服的记录。
             name (str): 角色名称，查找该角色的记录。
 
         Returns:
-            Dict: 副本记录。
+            ResponseRoleTeamCdList: 角色副本记录。
         """
         return self.request(endpoint="/data/role/teamCdList", server=server, name=name)
 
     @require_token
-    def luck_adventure(self, *, server: str, name: str) -> List[Dict]:
+    @require_ticket
+    def luck_adventure(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找该角色的相关记录"],
+    ) -> Annotated[Sequence[ResponseLuckAdventure], "角色奇遇触发记录(不保证遗漏)"]:
         """
         luck_adventure 奇遇记录
 
-        角色奇遇触发记录(不保证遗漏)。
+        角色奇遇触发记录(不保证遗漏)
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找该角色的相关记录。
 
         Returns:
-            List[Dict]: 奇遇记录。
+            Sequence[ResponseLuckAdventure]: 角色奇遇触发记录(不保证遗漏)。
         """
         return self.request(endpoint="/data/luck/adventure", server=server, name=name)
 
     @require_token
     def luck_statistical(
-        self, *, server: str, name: str, limit: int = 20
-    ) -> List[Dict]:
+        self,
+        *,
+        server: Annotated[str, "区服名称，查找该区服的记录"],
+        name: Annotated[str, "奇遇名称，查找该奇遇的记录"],
+        limit: Annotated[int, "单页数量，单页返回的数量，默认值 : 20"] = 20,
+    ) -> Annotated[Sequence[ResponseLuckStatistical], "奇遇近期触发统计"]:
         """
         luck_statistical 奇遇统计
 
-        奇遇近期触发统计。
+        奇遇近期触发统计
 
         Args:
             server (str): 区服名称，查找该区服的记录。
             name (str): 奇遇名称，查找该奇遇的记录。
-            limit (int, optional): 单页数量，单页返回的数量，默认值 : `20`。
+            limit (int, optional): 单页数量，单页返回的数量，默认值 : 20。
 
         Returns:
-            List[Dict]: 奇遇近期触发统计。
+            Sequence[ResponseLuckStatistical]: 奇遇近期触发统计。
         """
         return self.request(
             endpoint="/data/luck/statistical", server=server, name=name, limit=limit
         )
 
     @require_token
-    def luck_server_statistical(self, *, name: str, limit: int = 20) -> List[Dict]:
+    def luck_server_statistical(
+        self,
+        *,
+        name: Annotated[str, "奇遇名称，查找该奇遇的全服统计"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[
+        Sequence[ResponseLuckServerStatistical], "统计全服近期奇遇记录，不区分区服"
+    ]:
         """
         luck_server_statistical 全服统计
 
@@ -501,46 +620,57 @@ class JX3API:
 
         Args:
             name (str): 奇遇名称，查找该奇遇的全服统计。
-            limit (int, optional): 单页数量，设置返回的数量，默认值: `20`。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            List[Dict]: 全服近期奇遇记录。
+            Sequence[ResponseLuckServerStatistical]: 统计全服近期奇遇记录，不区分区服。
         """
         return self.request(
             endpoint="/data/luck/server/statistical", name=name, limit=limit
         )
 
     @require_token
-    def luck_collect(self, *, server: str, num: int = 7) -> List[Dict]:
+    def luck_collect(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        num: Annotated[int, "汇总时间，汇总指定天数内的记录，默认值 : 7"] = 7,
+    ) -> Annotated[Sequence[ResponseLuckCollect], "统计奇遇近期触发角色记录"]:
         """
         luck_collect 奇遇汇总
 
-        统计奇遇近期触发角色记录。
+        统计奇遇近期触发角色记录
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            num (int, optional): 汇总时间，汇总指定天数内的记录，默认值: `7`。
+            server (str): 区服，查找该区服的相关记录。
+            num (int, optional): 汇总时间，汇总指定天数内的记录，默认值 : 7。
 
         Returns:
-            List[Dict]: 奇遇触发记录。
+            Sequence[ResponseLuckCollect]: 统计奇遇近期触发角色记录。
         """
         return self.request(endpoint="/data/luck/collect", server=server, num=num)
 
     @require_token
     @require_ticket
-    def role_achievement(self, *, server: str, role: str, name: str) -> List[Dict]:
+    def role_achievement(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        role: Annotated[str, "角色名称，查找该角色的成就记录"],
+        name: Annotated[str, "成就/系列名称，查询该成就/系列的完成进度"],
+    ) -> Annotated[ResponseRoleAchievement, "角色成就进度"]:
         """
         role_achievement 成就百科
 
-        角色成就进度。
+        角色成就进度
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            role (str): 角色名称，查找该角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            role (str): 角色名称，查找该角色的成就记录。
             name (str): 成就/系列名称，查询该成就/系列的完成进度。
 
         Returns:
-            List[Dict]: 角色成就进度。
+            ResponseRoleAchievement: 角色成就进度。
         """
         return self.request(
             endpoint="/data/role/achievement", server=server, role=role, name=name
@@ -548,21 +678,25 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def match_recent(self, *, server: str, name: str, mode: int = 0) -> Dict:
+    def match_recent(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找该角色的相关记录"],
+        mode: Annotated[int | None, "比赛模式，查找该模式的相关记录"] = None,
+    ) -> Annotated[ResponseMatchRecent, "角色近期战绩记录"]:
         """
         match_recent 名剑战绩
 
-        角色近期战绩记录。
-        未输入比赛模式时，将返回推栏全部角色近期的比赛记录(推栏个人页面，会出现返回结果非指定角色数据)。
-        根据 ``mode`` 参数请求返回不同的数据结构，最终数据以返回为准。
+        角色近期战绩记录
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
-            mode (int, optional): 比赛模式，查找该模式的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找该角色的相关记录。
+            mode (int, optional): 比赛模式，查找该模式的相关记录。
 
         Returns:
-            Dict: 角色近期战绩记录。
+            ResponseMatchRecent: 角色近期战绩记录。
         """
         return self.request(
             endpoint="/data/match/recent", server=server, name=name, mode=mode
@@ -570,274 +704,342 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def match_awesome(self, *, mode: int = 33, limit: int = 20) -> Dict:
+    def match_awesome(
+        self,
+        *,
+        mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
+        limit: Annotated[int, "限制查询结果的数量，默认值 20"] = 20,
+    ) -> Annotated[Sequence[ResponseMatchAwesome], "角色近期战绩记录"]:
         """
         match_awesome 名剑排行
 
         角色近期战绩记录。
 
         Args:
-            mode (int, optional): 比赛模式，查找该模式的记录，默认值: `33`。
-            limit (int, optional): 单页数量，设置返回的数量，默认值: `20`。
+            mode (int, optional): 比赛模式，查找该模式的相关记录，默认值 : 33. Defaults to 33.
+            limit (int, optional): 限制查询结果的数量，默认值 20。
 
         Returns:
-            Dict: 名剑排行。
+            Sequence[ResponseMatchAwesome]: 角色近期战绩记录。
         """
         return self.request(endpoint="/data/match/awesome", mode=mode, limit=limit)
 
     @require_token
     @require_ticket
-    def match_schools(self, *, mode: int = 33) -> List[Dict]:
+    def match_schools(
+        self,
+        *,
+        mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
+    ) -> Annotated[Sequence[ResponseMatchSchools], "角色近期战绩记录"]:
         """
         match_schools 名剑统计
 
-        角色近期战绩记录。
+        角色近期战绩记录
 
         Args:
-            mode (int, optional): 比赛模式，查找该模式的记录，默认值: `33`。
+            mode (int, optional): 比赛模式，查找该模式的相关记录，默认值 : 33。
 
         Returns:
-            List[Dict]: 角色近期战绩记录。
+            Sequence[ResponseMatchSchools]: 角色近期战绩记录.
         """
         return self.request(endpoint="/data/match/schools", mode=mode)
 
     @require_token
     def member_recruit(
-        self, *, server: str, keyword: str | None = None, table: int = 1
-    ) -> Dict:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        keyword: Annotated[
+            str | None, "关键字，模糊匹配记录，用``=关键字``完全匹配记录"
+        ] = None,
+        table: Annotated[
+            int,
+            "指定表记录，``1``=``本服+跨服``，``2``=``本服``，``3``=``跨服``，默认值：``1``",
+        ] = 1,
+    ) -> Annotated[ResponseMemberRecruit, "团队招募信息"]:
         """
         member_recruit 团队招募
 
-        团队招募信息。
+        团队招募信息
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            keyword (str, optional): 关键字，模糊匹配记录，用`=关键字`完全匹配记录。
-            table (int, optional): 指定表记录，`1`=`本服+跨服`，`2`=`本服`，`3`=`跨服`，默认值：`1`。
+            server (str): 区服，查找该区服的相关记录。
+            keyword (str, optional): 关键字，模糊匹配记录，用``=关键字``完全匹配记录。
+            table (int, optional): 指定表记录，``1``=``本服+跨服``，``2``=``本服``，``3``=``跨服``，默认值：``1``。
 
         Returns:
-            Dict: 团队招募信息。
+            ResponseMemberRecruit: 团队招募信息。
         """
         return self.request(
             endpoint="/data/member/recruit", server=server, keyword=keyword, table=table
         )
 
     @require_token
-    def member_teacher(self, *, server: str, keyword: str | None = None) -> List[Dict]:
+    def member_teacher(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        keyword: Annotated[str | None, "关键字，查找该关键字的相关记录"] = None,
+    ) -> Annotated[ResponseMemberTeacher, "师父列表"]:
         """
         member_teacher 师父列表
 
-        客户端师徒系统。
+        客户端师徒系统
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            keyword (str, optional): 关键字，查找该关键字的记录。
+            server (str): 区服，查找该区服的相关记录。
+            keyword (str, optional): 关键字，查找该关键字的相关记录。
 
         Returns:
-            List[Dict]: 师父列表。
+            ResponseMemberTeacher: 师父列表。
         """
         return self.request(
             endpoint="/data/member/teacher", server=server, keyword=keyword
         )
 
     @require_token
-    def member_student(self, *, server: str, keyword: str | None = None) -> List[Dict]:
+    def member_student(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        keyword: Annotated[str | None, "关键字，查找该关键字的相关记录"] = None,
+    ) -> Annotated[ResponseMemberStudent, "徒弟列表"]:
         """
         member_student 徒弟列表
 
-        客户端师徒系统。
+        客户端师徒系统
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            keyword (str, optional): 关键字，查找该关键字的记录。
+            server (str): 区服，查找该区服的相关记录。
+            keyword (str, optional): 关键字，查找该关键字的相关记录。
 
         Returns:
-            List[Dict]: 徒弟列表。
+            ResponseMemberStudent: 徒弟列表。
         """
         return self.request(
             endpoint="/data/member/student", server=server, keyword=keyword
         )
 
     @require_token
-    def server_sand(self, *, server: str) -> Dict:
+    def server_sand(
+        self, *, server: Annotated[str, "区服，查找该区服的相关记录"]
+    ) -> Annotated[ResponseServerSand, "阵营沙盘信息"]:
         """
         server_sand 沙盘信息
 
         查看阵营沙盘信息。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 区服，查找该区服的相关记录。
 
         Returns:
-            Dict: 沙盘信息。
+            ResponseServerSand: 阵营沙盘信息。
         """
         return self.request(endpoint="/data/server/sand", server=server)
 
     @require_token
-    def server_event(self, *, limit: int = 100) -> List[Dict]:
+    def server_event(
+        self,
+        *,
+        name: Annotated[str | None, "阵营名称，查找该阵营的相关记录"] = None,
+        limit: Annotated[int, "限制查询结果的数量，默认值 100", 100],
+    ) -> Annotated[Sequence[ResponseServerEvent], "全服阵营大事件"]:
         """
         server_event 阵营事件
 
-        全服阵营大事件。
+        全服阵营大事件
 
         Args:
-            limit (int, optional): 单页数量，设置返回数量，默认值: 100。
+            name (str, optional): 阵营名称，查找该阵营的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 100。
 
         Returns:
-            List[Dict]: 阵营事件详细列表。
+            Sequence[ResponseServerEvent]: 全服阵营大事件。
         """
-        return self.request(endpoint="/data/server/event", limit=limit)
+        return self.request(endpoint="/data/server/event", name=name, limit=limit)
 
     @require_token
-    def trade_demon(self, *, server: str | None = None, limit: int = 10) -> List[Dict]:
+    def trade_demon(
+        self,
+        *,
+        server: Annotated[str | None, "指定区服，查找该区服的相关记录，可选"] = None,
+        limit: Annotated[int, "限制查询结果的数量，默认值 10，可选"] = 10,
+    ) -> Annotated[Sequence[ResponseTradeDemon], "金价比例信息"]:
         """
         trade_demon 金币比例
 
-        金价比例信息。
-        未输入区服名称或输入错误区服名称时，将返回全部区服的金币比例信息。
+        金价比例信息
 
         Args:
-            server (str, optional): 区服名称，查找该区服的记录。
-            limit (int, optional): 单页数量，设置返回的数量，默认值: ``10``。
+            server (str, optional): 指定区服，查找该区服的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            List[Dict]: 金币比例信息。
+            Sequence[ResponseTradeDemon]: 金价比例信息
         """
         return self.request(endpoint="/data/trade/demon", server=server, limit=limit)
 
     @require_token
-    def trade_record(self, name: str) -> Dict:
+    def trade_record(
+        self,
+        *,
+        name: Annotated[str, "外观名称，查找该外观的记录"],
+        server: Annotated[str | None, "区服，查找该区服的相关记录"] = None,
+    ) -> Annotated[ResponseTradeRecord, "黑市物品价格统计"]:
         """
         trade_record 物品价格
 
-        黑市物品价格统计。
+        黑市物品价格统计
 
         Args:
             name (str): 外观名称，查找该外观的记录。
+            server (str, optional): 区服，查找该区服的相关记录。
 
         Returns:
-            Dict: 物品价格。
+            ResponseTradeRecord: 黑市物品价格统计。
         """
-        return self.request(endpoint="/data/trade/record", name=name)
+        return self.request(endpoint="/data/trade/record", server=server, name=name)
 
     @require_token
     def tieba_item_records(
-        self, *, name: str, server: str | None = "", limit: int = 1
-    ) -> List[Dict]:
+        self,
+        *,
+        server: Annotated[
+            str, "区服，查找该区服的相关记录，默认值：``-`` 为全区服"
+        ] = "-",
+        name: Annotated[str, "物品名称，查找该物品的相关记录"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
+    ) -> Annotated[Sequence[ResponseTiebaItemRecords], "来自贴吧的外观记录"]:
         """
         tieba_item_records 贴吧记录
 
         来自贴吧的外观记录。
 
         Args:
-            name (str): 外观名称，查找该外观的记录。
-            server (str, optional): 区服名称，查找该区服的记录，默认值：``-`` 为全区服。
-            limit (int, optional): 单页数量，设置返回的数量，默认值：1。
+            server (str, optional): 区服，查找该区服的相关记录，默认值：``-`` 为全区服。
+            name (str): 物品名称，查找该物品的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 ``10``。
 
         Returns:
-            List[Dict]: 贴吧记录。
+            Sequence[ResponseTiebaItemRecords]: 来自贴吧的外观记录。
         """
         return self.request(
             endpoint="/data/tieba/item/records", server=server, name=name, limit=limit
         )
 
     @require_token
-    def valuables_statistical(self, *, name: str, limit: int = 20) -> List[Dict]:
+    def valuables_statistical(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "物品名称，查找该物品的相关记录"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 20"] = 20,
+    ) -> Annotated[Sequence[ResponseValuablesStatistical], "统计副本掉落的贵重物品"]:
         """
         valuables_statistical 掉落统计
 
         统计副本掉落的贵重物品。
 
         Args:
-            name (str): 物品名称，查找该物品的记录。
-            limit (int, optional): 单页数量，设置返回的数量，默认值：`20`。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 物品名称，查找该物品的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 20。
 
         Returns:
-            List[Dict]: 贵重物品掉落记录。
+            Sequence[ResponseValuablesStatistical]: 统计副本掉落的贵重物品。
         """
         return self.request(
-            endpoint="/data/valuables/statistical", name=name, limit=limit
+            endpoint="/data/valuables/statistical",
+            server=server,
+            name=name,
+            limit=limit,
         )
 
     @require_token
-    def valuables_server_statistical(self, *, name: str, limit: int = 30) -> List[Dict]:
+    def valuables_server_statistical(
+        self,
+        *,
+        name: Annotated[str, "物品名称，查找该物品的相关记录"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[
+        Sequence[ResponseValuablesServerStatistical], "统计当前赛季副本掉落的特殊物品"
+    ]:
         """
         valuables_server_statistical 全服掉落
 
         统计当前赛季副本掉落的特殊物品。
 
         Args:
-            name (str): 物品名称，查找该物品的记录。
-            limit (int, optional): 单页数量，设置返回的数量，默认值 : ``30``。
+            name (str): 物品名称，查找该物品的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            List[Dict]: 全服掉落物品记录。
+            Sequence[ResponseValuablesServerStatistical]: 统计当前赛季副本掉落的特殊物品。
         """
         return self.request(
             endpoint="/data/valuables/server/statistical", name=name, limit=limit
         )
 
     @require_token
-    def valuables_collect(self, *, server: str, num: int = 7) -> List[Dict]:
-        """
-        valuables_collect 掉落汇总
-
-        副本掉落的特殊物品。
-
-        Args:
-            server (str): 区服名称，查找该区服的记录。
-            num (int, optional): 统计范围，默认值 ``7`` 天。
-
-        Returns:
-            List[Dict]: 掉落汇总信息。
-        """
-        return self.request(endpoint="/data/valuables/collect", server=server, num=num)
-
-    @require_token
-    def server_antivice(self) -> List[Dict]:
+    def server_antivice(
+        self, *, server: Annotated[str | None, "服务器"] = None
+    ) -> Annotated[Sequence[ResponseServerAntivice], "诛恶事件历史记录(不允许轮询)"]:
         """
         server_antivice 诛恶事件
 
-        诛恶事件历史记录。
-        不允许轮询。
+        诛恶事件历史记录(不允许轮询)
+
+        Args:
+            server (str, optional): 服务器。
 
         Returns:
-            List[Dict]: 诛恶事件历史记录。
+            Sequence[ResponseServerAntivice]: 诛恶事件历史记录(不允许轮询)。
         """
-        return self.request(endpoint="/data/server/antivice")
+        return self.request(endpoint="/data/server/antivice", server=server)
 
     @require_token
-    def rank_statistical(self, *, table: str, name: str, server: str) -> List[Dict]:
+    def rank_statistical(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        table: Annotated[str, "榜单类型"],
+        name: Annotated[str, "榜单名称"],
+    ) -> Annotated[Sequence[ResponseRankStatistical], "客户端战功榜与风云录"]:
         """
         rank_statistical 风云榜单
 
         客户端战功榜与风云录。
 
         Args:
+            server (str): 区服，查找该区服的相关记录。
             table (str): 榜单类型。
             name (str): 榜单名称。
-            server (str): 区服名称。
 
         Returns:
-            List[Dict]: 风云榜单。
+            Sequence[ResponseRankStatistical]: 客户端战功榜与风云录。
         """
         return self.request(
-            endpoint="/data/rank/statistical", table=table, name=name, server=server
+            endpoint="/data/rank/statistical", server=server, table=table, name=name
         )
 
     @require_token
-    def rank_server_statistical(self, *, table: str, name: str) -> List[Dict]:
+    def rank_server_statistical(
+        self,
+        *,
+        table: Annotated[str, "榜单类型，个人/帮会/阵营/试炼"],
+        name: Annotated[str, "榜单名称"],
+    ) -> Annotated[Sequence[ResponseRankServerStatistical], "客户端战功榜与风云录"]:
         """
-        server_rank 全服榜单
+        rank_server_statistical 全服榜单
 
-        客户端战功榜与风云录
+        客户端战功榜与风云录。
 
         Args:
-            table (str): 榜单类型。
+            table (str): 榜单类型，个人/帮会/阵营/试炼。
             name (str): 榜单名称。
 
         Returns:
-            List[Dict]: 全服榜单。
+            Sequence[ResponseRankServerStatistical]: 客户端战功榜与风云录。
         """
         return self.request(
             endpoint="/data/rank/server/statistical", table=table, name=name
@@ -846,345 +1048,196 @@ class JX3API:
     @require_token
     @require_ticket
     def school_rank_statistical(
-        self, *, school: str | None = "ALL", server: str | None = "ALL"
-    ) -> List[Dict]:
+        self,
+        *,
+        school: Annotated[str, "门派简称，查找该心法的相关记录，默认值 : ALL"] = "ALL",
+        server: Annotated[str, "指定区服，查找该区服的相关记录，默认值 : ALL"] = "ALL",
+    ) -> Annotated[Sequence[ResponseSchoolRankStatistical], "游戏资历榜单"]:
         """
-        rank_statistical 资历榜单
+        school_rank_statistical 资历榜单
 
-        游戏资历榜单。
+        游戏资历榜单
 
         Args:
-            school (str, optional): 门派简称，查找该心法的记录，默认值: ``ALL``。
-            server (str, optional): 区服名称，查找该区服的记录，默认值: ``ALL``。
+            school (str, optional): 门派简称，查找该心法的相关记录，默认值 : ALL。
+            server (str, optional): 指定区服，查找该区服的相关记录，默认值 : ALL。
 
         Returns:
-            List[Dict]: 游戏资历榜单。
+            Sequence[ResponseSchoolRankStatistical]: 游戏资历榜单。
         """
         return self.request(
             endpoint="/data/school/rank/statistical", school=school, server=server
         )
 
-    @require_token
-    def duowan_statistical(self, *, server: str | None = None) -> List[Dict]:
-        """
-        duowan_statistical 歪歪频道
-
-        服务器的统战歪歪。
-
-        Args:
-            server (str, optional): 区服名称，查找该区服的记录。
-
-        Returns:
-            List[Dict]: 歪歪频道信息。
-        """
-        return self.request(endpoint="/data/duowan/statistical", server=server)
-
-    ##############
-    # VIP II API #
-    ##############
+    ##########
+    # VIP II #
+    ##########
 
     @require_token
-    def active_monster(self, *, token: str) -> Dict:
+    def active_monster(
+        self,
+    ) -> Annotated[ResponseActiveMonster, "本周百战异闻录刷新的首领以及特殊效果"]:
         """
         active_monster 百战首领
 
         本周百战异闻录刷新的首领以及特殊效果。
 
-        Args:
-            token (str): 站点标识，检查请求权限。
-
         Returns:
-            Dict: 本周百战异闻录刷新的首领以及特殊效果。
+            ResponseActiveMonster: 本周百战异闻录刷新的首领以及特殊效果。
         """
-        return self.request(endpoint="/data/active/monster", token=token)
+        return self.request(endpoint="/data/active/monster")
 
     @require_token
-    def horse_ecords(self, *, server: str | None = None) -> List[Dict]:
+    def horse_record(
+        self, *, server: Annotated[str, "可选的服务器，查找该区服的相关记录"]
+    ) -> Annotated[Sequence[ResponseHorseRecord], "客户端的卢刷新记录"]:
         """
-        horse_records 的卢统计
+        horse_record 的卢统计
 
         客户端的卢刷新记录。
 
         Args:
-            server (str, optional): 区服名称，查找该区服的记录。
+            server (str): 可选的服务器，查找该区服的相关记录。
 
         Returns:
-            List[Dict]: 的卢统计。
+            Sequence[ResponseHorseRecord]: 客户端的卢刷新记录。
         """
-        return self.request(endpoint="/data/horse/records", server=server)
+        return self.request(endpoint="/data/horse/record", server=server)
 
     @require_token
-    def horse_event(self, *, server: str) -> Dict:
+    def horse_ranch(
+        self, *, server: Annotated[str, "区服，查找该区服的相关记录"]
+    ) -> Annotated[ResponseHorseRanch, "客户端马场刷新记录"]:
         """
-        horse_event 马场事件
+        horse_ranch 马场事件
 
         客户端马场刷新记录。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 区服，查找该区服的相关记录。
 
         Returns:
-            Dict: 马场刷新记录。
+            ResponseHorseRanch: 客户端马场刷新记录。
         """
-        return self.request(endpoint="/data/horse/event", server=server)
+        return self.request(endpoint="/data/horse/ranch", server=server)
 
-    @require_token
-    def watch_record(self, *, server: str, name: str) -> List[Dict]:
+    def firework_record(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找该角色的相关记录"],
+    ) -> Annotated[
+        Sequence[ResponseFireworkRecord], "烟花赠送与接收的历史记录，不保证遗漏"
+    ]:
         """
-        watch_record 烟花记录
+        firework_record 烟花记录
 
         烟花赠送与接收的历史记录，不保证遗漏。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找该角色的相关记录。
 
         Returns:
-            List[Dict]: 烟花记录。
+            Sequence[ResponseFireworkRecord]: 烟花赠送与接收的历史记录，不保证遗漏。
         """
-        return self.request(endpoint="/data/watch/record", server=server, name=name)
+        return self.request(endpoint="/data/firework/record", server=server, name=name)
 
     @require_token
-    def watch_statistical(
-        self, *, server: str, name: str, limit: int = 20
-    ) -> List[Dict]:
+    def firework_statistical(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "烟花名称，查找该烟花的相关统计"],
+        limit: Annotated[int, "单页数量，设置返回的数量，默认值 : 20"] = 20,
+    ) -> Annotated[Sequence[ResponseFireworkStatistical], "统计烟花记录"]:
         """
-        watch_statistical 烟花统计
+        firework_statistical 烟花统计
 
         统计烟花记录。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 烟花名称，查找该烟花的记录。
-            limit (int, optional): 单页数量，设置返回的数量。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 烟花名称，查找该烟花的相关统计。
+            limit (int, optional): 单页数量，设置返回的数量，默认值 : 20。
 
         Returns:
-            List[Dict]: 烟花统计记录。
+            Sequence[ResponseFireworkStatistical]: 统计烟花记录。
         """
         return self.request(
-            endpoint="/data/watch/statistical", server=server, name=name, limit=limit
+            endpoint="/data/firework/statistical", server=server, name=name, limit=limit
         )
 
     @require_token
-    def watch_collect(self, *, server: str, num: int = 7) -> List[Dict]:
+    def firework_collect(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        num: Annotated[int, "统计时间，默认值：7 天"] = 7,
+    ) -> Annotated[Sequence[ResponseFireworkCollect], "汇总烟花记录"]:
         """
-        watch_collect 烟花汇总
+        firework_collect 烟花汇总
 
         汇总烟花记录。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 区服，查找该区服的相关记录。
             num (int, optional): 统计时间，默认值：7 天。
 
         Returns:
-            List[Dict]: 烟花汇总记录。
+            Sequence[ResponseFireworkCollect]: 汇总烟花记录。
         """
-        return self.request(endpoint="/data/watch/collect", server=server, num=num)
+        return self.request(endpoint="/data/firework/collect", server=server, num=num)
 
     @require_token
-    def watch_rank_statistical(
+    def firework_rank_statistical(
         self,
         *,
-        server: str,
-        column: Literal["sender", "recipient", "name"],
-        this_time: int,
-        that_time: int,
-    ) -> List[Dict]:
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        column: Annotated[str, "可选范围：[sender recipient name]"],
+        this_time: Annotated[int, "统计开始的时间，与结束的时间不得超过3个月"],
+        that_time: Annotated[int, "统计结束的时间，与开始的时间不得超过3个月"],
+    ) -> Annotated[Sequence[ResponseFireworkRankStatistical], "烟花赠送与接收的榜单"]:
         """
-        rank_statistical 烟花排行
+        firework_rank_statistical 烟花排行
 
         烟花赠送与接收的榜单。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            column (str): 可选范围：[``sender`` ``recipient`` ``name``]。
+            server (str): 区服，查找该区服的相关记录。
+            column (str): 可选范围：[sender recipient name]。
             this_time (int): 统计开始的时间，与结束的时间不得超过3个月。
             that_time (int): 统计结束的时间，与开始的时间不得超过3个月。
 
         Returns:
-            List[Dict]: 烟花排行信息。
+            Sequence[ResponseFireworkRankStatistical]: 烟花赠送与接收的榜单。
         """
         return self.request(
-            endpoint="/data/watch/rank/statistical",
+            endpoint="/data/firework/rank/statistical",
             server=server,
             column=column,
             this_time=this_time,
             that_time=that_time,
         )
 
-    ###########
-    # VRF API #
-    ###########
-
-    @require_token
-    def chat_mixed(self, *, name: str, text: str) -> Dict:
-        """
-        chat_mixed 智障聊天
-
-        Args:
-            name (str): 机器人的名称。
-            text (str): 聊天的完整内容。
-
-        Returns:
-            Dict: 聊天的详细内容。
-        """
-        return self.request(endpoint="/data/chat/mixed", name=name, text=text)
-
-    @require_token
-    def music_tencent(self, *, name: str) -> List[Dict]:
-        """
-        music_tencent 腾讯音乐
-
-        搜索腾讯音乐歌曲编号。
-
-        Args:
-            name (str): 歌曲名称，查找歌曲的编号。
-
-        Returns:
-            List[Dict]: 腾讯音乐编号信息。
-        """
-        return self.request(endpoint="/data/music/tencent", name=name)
-
-    @require_token
-    def music_netease(self, *, name: str) -> List[Dict]:
-        """
-        music_netease 网易音乐
-
-        搜索网易云音乐歌曲编号。
-
-        Args:
-            name (str): 歌曲名称，查找该歌曲的编号。
-
-        Returns:
-            List[Dict]: 网易云音乐歌曲编号。
-        """
-        return self.request(endpoint="/data/music/netease", name=name)
-
-    @require_token
-    def music_kugou(self, *, name: str) -> Dict:
-        """
-        music_kugou 酷狗音乐
-
-        搜索酷狗音乐歌曲编号。
-
-        Args:
-            name (str): 歌曲名称，查找该歌曲的编号。
-
-        Returns:
-            Dict: 酷狗音乐歌曲信息。
-        """
-        return self.request(endpoint="/data/music/kugou", name=name)
-
-    @require_token
-    def fraud_detail(self, *, uin: int) -> Dict:
-        """
-        fraud_detail 骗子记录
-
-        搜索贴吧的行骗记录。
-
-        Args:
-            uin (int): 用户QQ号，查找是否存在行骗记录。
-
-        Returns:
-            Dict: 骗子记录。
-        """
-        return self.request(endpoint="/data/fraud/detail", uin=uin)
-
-    def idiom_solitaire(self, *, name: str) -> Dict:
-        """
-        idiom_solitaire 成语接龙
-
-        校对成语并返回相关成语
-
-        Args:
-            name (str): 查找对应词语。
-
-        Returns:
-            Dict: 成语及其信息
-        """
-        return self.request(endpoint="/data/idiom/solitaire", name=name)
-
-    def saohua_random(self) -> Dict:
-        """
-        saohua_random 撩人骚话
-
-        万花门派骚话。
-
-        Returns:
-            Dict: 骚话。
-        """
-        return self.request(endpoint="/data/saohua/random")
-
-    def saohua_content(self) -> Dict:
-        """
-        saohua_content 舔狗日记
-
-        召唤一条舔狗日记。
-
-        Returns:
-            Dict: 舔狗日记。
-        """
-        return self.request(endpoint="/data/saohua/content")
-
-    def sound_converter(
-        self,
-        *,
-        appkey: str,
-        access: str,
-        secret: str,
-        text: str,
-        voice: str = "Aitong",
-        format: str = "mp3",
-        sample_rate: int = 16000,
-        volume: int = 50,
-        speech_rate: int = 0,
-        pitch_rate: int = 0,
-    ) -> Dict:
-        """
-        converter 语音合成
-
-        阿里云语音合成（TTS）。
-
-        Args:
-            appkey (str): 阿里云身份识别，`[点击申请](https://nls-portal.console.aliyun.com/overview)`。
-            access (str): 阿里云身份识别，`[点击申请](https://usercenter.console.aliyun.com)`。
-            secret (str): 阿里云身份识别，`[点击申请](https://usercenter.console.aliyun.com)`。
-            text (str): 合成的内容。
-            voice (str, optional): 发音人，默认值 `[Aitong]`，`[点击查看](https://help.aliyun.com/knowledge_detail/84435.html?spm=a2c4g.11186631.2.1.67045663WlpL4n)`。
-            format (str, optional): 编码格式，范围 `[PCM][WAV][MP3]`，默认值 `[MP3]`。
-            sample_rate (int, optional): 采样率，默认值 `[16000]`。
-            volume (int, optional): 音量，范围 `[0～100]`，默认值 `[50]`。
-            speech_rate (int, optional): 语速，范围 `[-500～500]`，默认值 `[0]`。
-            pitch_rate (int, optional): 音调，范围 `[-500～500]`，默认值 `[0]`。
-
-        Returns:
-            Dict: 语音合成信息。
-        """
-
-        return self.request(
-            endpoint="/data/sound/converter",
-            appkey=appkey,
-            access=access,
-            secret=secret,
-            text=text,
-            voice=voice,
-            format=format,
-            sample_rate=sample_rate,
-            volume=volume,
-            speech_rate=speech_rate,
-            pitch_rate=pitch_rate,
-        )
-
 
 class AsyncJX3API:
-    def __init__(self, *, token: str | None = None, ticket: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        token: Annotated[str | None, "推栏 token"] = None,
+        ticket: Annotated[str | None, "站点标识"] = None,
+        base_url: str = "https://www.jx3api.com",
+    ) -> None:
         if not token:
             logging.warning(
                 "The `token` parameter is not specified, only the free API can be used."
             )
 
-        self.token = token
-        self.ticket = ticket
+        self.token = token or os.getenv("JX3API_TOKEN")
+        self.ticket = ticket or os.getenv("JX3API_TICKET")
+
+        self.base_url = base_url
 
     async def request(self, *, endpoint: str, **kwargs) -> Any:
         logging.debug(f"requesting: {endpoint=}, {kwargs=}")
@@ -1193,7 +1246,7 @@ class AsyncJX3API:
 
         async with aiohttp.request(
             "GET",
-            urljoin(base="https://www.jx3api.com", url=endpoint),
+            urljoin(base=self.base_url, url=endpoint),
             data=json.dumps(kwargs).encode(encoding="utf-8"),
             headers={"token": token} if (token := self.token) else {},
         ) as resp:
@@ -1209,6 +1262,7 @@ class AsyncJX3API:
                 raise ValueError(
                     "The `token` parameter is not specified, only the free API can be used."
                 )
+
             return await func(self, *args, **kwargs)
 
         return decorator
@@ -1218,6 +1272,7 @@ class AsyncJX3API:
         def decorator(self, *args, **kwargs) -> Awaitable[Callable[..., Any]]:
             if not self.ticket:
                 raise ValueError("The `ticket` parameter must be specified.")
+
             return func(self, *args, **kwargs)
 
         return decorator
@@ -1227,372 +1282,459 @@ class AsyncJX3API:
     ############
 
     async def active_calendar(
-        self, *, server: str | None = None, num: int = 0
+        self,
+        *,
+        server: Annotated[str | None, "区服名称，查找该区服的记录。"] = None,
+        num: Annotated[
+            int,
+            "指定日期，查询指定日期的日常，默认值 : ``0`` 为当天，``1`` 为明天，以此类推。",
+        ] = 0,
     ) -> Annotated[Awaitable[ResponseActiveCalendar], "今天、明天、后天、日常任务"]:
         """
         active_calendar 活动日历
 
         今天、明天、后天、日常任务。
-        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键与值。
+        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键对值。
 
         Args:
             server (str, optional): 区服名称，查找该区服的记录。
-            num (int, optional): 预测时间，预测指定时间的日常，默认值: ``0`` 为当天，``1`` 为明天，以此类推。
+            num (int, optional): 指定日期，查询指定日期的日常，默认值 : ``0`` 为当天，``1`` 为明天，以此类推。
 
         Returns:
-            Awaitable[Dict]: 今天、明天、后天、日常任务。
+            Awaitable[ResponseActiveCalendar]: 今天、明天、后天、日常任务。
         """
         return await self.request(
             endpoint="/data/active/calendar", server=server, num=num
         )
 
     async def active_list_calendar(
-        self, *, num: int = 15
+        self,
+        *,
+        num: Annotated[
+            int, "预测时间，查询指定时间内的月历，默认值 : ``15`` 为前后15天的月历"
+        ] = 15,
     ) -> Annotated[Awaitable[ResponseActiveListCalendar], "预测每天的日常任务"]:
         """
         active_list_calendar 活动月历
 
         预测每天的日常任务。
-        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键与值。
+        只有 星期三、星期五、星期六、星期日 才有美人画图，星期三、星期五 才有世界首领，若非活动时间不返回相关键对值。
 
         Args:
-            num (int, optional): 预测时间，预测指定时间范围内的活动，默认值 : ``15`` 为当天，``1`` 为明天。
+            num (int, optional): 预测时间，查询指定时间内的月历，默认值 : ``15`` 为前后15天的月历。
 
         Returns:
-            Awaitable[Dict]: 预测每天的日常任务。
+            Awaitable[ResponseActiveListCalendar]: 预测每天的日常任务。
         """
         return await self.request(endpoint="/data/active/list/calendar", num=num)
 
-    async def active_celebrity(
-        self, *, season: int = 2
+    async def active_celebs(
+        self,
+        *,
+        name: Annotated[str, "名称，查询指定事件的记录"],
     ) -> Annotated[
-        Awaitable[Sequence[ResponseActiveCelebrity]], "当前时间的楚天社/云从社进度"
+        Awaitable[Sequence[ResponseActiveCelebs]], "当前时间的楚天社/云从社进度"
     ]:
         """
-        active_celebrity 行侠事件
+        active_celebs 行侠事件
 
         当前时间的楚天社/云从社进度。
 
         Args:
-            season (int, optional): 第几赛季，用于返回楚天社或云从社的判断条件，可选值：``1-3``。
+            name (str): 名称，查询指定事件的记录。
 
         Returns:
-            Awaitable[List[Dict]]: 当前时间的楚天社/云从社进度。
+            Awaitable[Sequence[ResponseActiveCelebs]]: 当前时间的楚天社/云从社进度。
         """
-        return await self.request(endpoint="/data/active/celebrity", season=season)
+        return await self.request(endpoint="/data/active/celebs", name=name)
 
     async def exam_answer(
-        self, *, match: str, limit: int = 10
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        subject: Annotated[str, "科举试题，支持首字母，支持模糊查询"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[Awaitable[Sequence[ResponseExamAnswer]], "科举答题"]:
         """
         exam_answer 科举试题
 
-        科举答案。
+        科举答题
 
         Args:
-            match (str): 科举试题，支持首字母，支持模糊查询。
-            limit (int, optional): 设置返回的数量，默认值 ``10``。
+            subject (str): 科举试题，支持首字母，支持模糊查询。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            Awaitable[List[Dict]]: 科举试题答案。
+            Awaitable[Sequence[ResponseExamAnswer]]: 科举答题。
         """
         return await self.request(
-            endpoint="/data/exam/answer", match=match, limit=limit
+            endpoint="/data/exam/answer", subject=subject, limit=limit
         )
 
+    async def home_furniture(
+        self,
+        *,
+        name: Annotated[str, "指定装饰，查找该装饰的详细记录"],
+    ) -> Annotated[Awaitable[ResponseHomeFurniture], "装饰详情"]:
+        """
+        home_furniture 家园装饰
+
+        装饰详情
+
+        Args:
+            name (str): 指定装饰，查找该装饰的详细记录。
+
+        Returns:
+            Awaitable[ResponseHomeFurniture]: 装饰详情。
+        """
+        return await self.request(endpoint="/data/home/furniture", name=name)
+
+    async def home_travel(
+        self,
+        *,
+        name: Annotated[str, "地图，查找该地图的装饰产出"],
+    ) -> Annotated[Awaitable[Sequence[ResponseHomeTravel]], "器物谱地图产出装饰"]:
+        """
+        home_travel 器物图谱
+
+        器物谱地图产出装饰
+
+        Args:
+            name (str): 地图，查找该地图的装饰产出。
+
+        Returns:
+            Awaitable[Sequence[ResponseHomeTravel]]: 器物谱地图产出装饰。
+        """
+        return await self.request(endpoint="/data/home/travel", name=name)
+
+    async def news_allnews(
+        self,
+        *,
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[Awaitable[Sequence[ResponseNewsAllnews]], "官方最新公告及新闻"]:
+        """
+        news_allnews 新闻资讯
+
+        官方最新公告及新闻
+
+        Args:
+            limit (int, optional): 限制查询结果的数量，默认值 10.
+
+        Returns:
+            Awaitable[Sequence[ResponseNewsAllnews]]: 官方最新公告及新闻。
+        """
+        return await self.request(endpoint="/data/news/allnews", limit=limit)
+
+    async def news_announce(
+        self,
+        *,
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[Awaitable[Sequence[ResponseNewsAnnounce]], "官方最新维护公告"]:
+        """
+        news_announce 维护公告
+
+        官方最新维护公告
+
+        Args:
+            limit (int, optional): 限制查询结果的数量，默认值 10。
+
+        Returns:
+            Awaitable[Sequence[ResponseNewsAnnounce]]: 官方最新维护公告。
+        """
+        return await self.request(endpoint="/data/news/announce", limit=limit)
+
+    async def server_master(
+        self,
+        *,
+        name: Annotated[str, "指定区服，查找该区服的相关记录"],
+    ) -> Annotated[Awaitable[ResponseServerMaster], "简称搜索主次服务器"]:
+        """
+        server_master 搜索区服
+
+        简称搜索主次服务器
+
+        Args:
+            name (str): 指定区服，查找该区服的相关记录。
+
+        Returns:
+            Awaitable[ResponseServerMaster]: 简称搜索主次服务器。
+        """
+        return await self.request(endpoint="/data/server/master", name=name)
+
+    async def server_check(
+        self,
+        *,
+        server: Annotated[
+            str | None,
+            "可选的服务器名称，查找该区服的相关记录；未输入区服名称或输入错误区服名称时，将返回全部区服的状态数据，可用于开服监控(支持轮询请求)",
+        ] = None,
+    ) -> Annotated[Awaitable[ResponseServerCheck], "服务器当前状态 [ 已开服/维护中 ]"]:
+        """
+        server_check 开服检查
+
+        服务器当前状态 [ 已开服/维护中 ]
+
+        Args:
+            server (str, optional): 可选的服务器名称，查找该区服的相关记录；未输入区服名称或输入错误区服名称时，将返回全部区服的状态数据，可用于开服监控(支持轮询请求)。
+
+        Returns:
+            Awaitable[ResponseServerCheck]: 服务器当前状态 [ 已开服/维护中 ]
+        """
+        return await self.request(endpoint="/data/server/check", server=server)
+
+    async def server_status(
+        self,
+        *,
+        server: Annotated[str, "指定区服，查找该区服的相关记录"],
+    ) -> Annotated[Awaitable[ResponseServerStatus], "服务器当前状态"]:
+        """
+        server_status 查看状态
+
+        服务器当前状态 [ 维护/正常/繁忙/爆满 ]
+
+        Args:
+            server (str): 指定区服，查找该区服的相关记录。
+
+        Returns:
+            Awaitable[ResponseServerStatus]: 服务器当前状态。
+        """
+        return await self.request(endpoint="/data/server/status", server=server)
+
     async def home_flower(
-        self, *, server: str, name: str | None = None, map: str | None = None
-    ) -> Awaitable[Dict]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str | None, "鲜花，查找该鲜花的相关记录"] = None,
+        map: Annotated[str | None, "地图，查找该地图的相关记录"] = None,
+    ) -> Annotated[Awaitable[ResponseHomeFlower], "家园鲜花最高价格线路"]:
         """
         home_flower 鲜花价格
 
         家园鲜花最高价格线路。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str, optional): 鲜花名称，查找该鲜花的记录。
-            map (str, optional): 地图名称，查找该地图的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str, optional): 鲜花，查找该鲜花的相关记录。
+            map (str, optional): 地图，查找该地图的相关记录。
 
         Returns:
-            Awaitable[Dict]: 鲜花价格。
+            Awaitable[ResponseHomeFlowerData]: 家园鲜花最高价格线路。
         """
         return await self.request(
             endpoint="/data/home/flower", server=server, name=name, map=map
         )
 
-    async def home_furniture(self, *, name: str) -> Awaitable[Dict]:
-        """
-        home_furniture 家园装饰
-
-        装饰详情。
-
-        Args:
-            name (str): 装饰名称，查找该装饰的详细记录。
-
-        Returns:
-            Awaitable[Dict]: 装饰详情。
-        """
-        return await self.request(endpoint="/data/home/furniture", name=name)
-
-    async def home_travel(self, *, name: str) -> Awaitable[List[Dict]]:
-        """
-        home_travel 器物图谱
-
-        器物谱地图产出装饰。
-
-        Args:
-            name (str, optional): 地图名称，查找该地图的家具。
-
-        Returns:
-            Awaitable[List[Dict]]: 地图产出装饰。
-        """
-        return await self.request(endpoint="/data/home/travel", name=name)
-
-    async def news_allnews(self, *, limit: int = 10) -> Awaitable[List[Dict]]:
-        """
-        news_allnews 新闻资讯
-
-        官方最新公告及新闻。
-
-        Args:
-            limit (int, optional): 单页数量，设置返回的数量，默认值 ``10``。
-
-        Returns:
-            Awaitable[List[Dict]]: 官方最新公告及新闻
-        """
-        return await self.request(endpoint="/data/news/allnews", limit=limit)
-
-    async def news_announce(self, *, limit: int = 10) -> Awaitable[List[Dict]]:
-        """
-        news_announce 维护公告
-
-        官方最新公告及新闻。
-
-        Args:
-            limit (int, optional): 单页数量，设置返回的数量，默认值 ``10``。
-
-        Returns:
-            Awaitable[List[Dict]]: 官方最新公告及新闻。
-        """
-        return await self.request(endpoint="/data/news/announce", limit=limit)
-
-    async def school_toxic(self, *, name: str) -> Awaitable[List[Dict]]:
-        """
-        school_stoxic 小药清单
-
-        推荐的小药清单。
-
-        Args:
-            name (str): 心法名称，查找该心法的记录。
-
-        Returns:
-            Awaitable[List[Dict]]: 推荐的小药清单。
-        """
-        return await self.request(endpoint="/data/school/toxic", name=name)
-
-    async def server_master(self, *, name: str) -> Awaitable[Dict]:
-        """
-        server_master 搜索区服
-
-        简称搜索主次服务器。
-
-        Args:
-            name (str): 区服名称，查找该区服的记录。
-
-        Returns:
-            Awaitable[Dict]: 主次服务器信息。
-        """
-        return await self.request(endpoint="/data/server/master", name=name)
-
-    async def server_check(self, *, server: str | None = None) -> Awaitable[Dict]:
-        """
-        server_check 开服检查
-
-        服务器当前状态 ``[ 已开服/维护中 ]``。
-        未输入区服名称或输入错误区服名称时，将返回全部区服的状态数据，可用于开服监控(支持轮询请求)。
-        刷新频率 : ``30`` 秒。
-
-        Args:
-            server (str, optional): 区服名称，查找该区服的记录。
-
-        Returns:
-            Awaitable[Dict]: 服务器当前状态 ```[ 维护/正常/繁忙/爆满 ]```。
-        """
-        return await self.request(endpoint="/data/server/check", server=server)
-
-    async def server_status(self, *, server: str) -> Awaitable[Dict]:
-        """
-        server_status 查看状态
-
-        服务器当前状态 ```[ 维护/正常/繁忙/爆满 ]```。
-
-        Args:
-            server (str): 区服名称，查找该区服的记录。
-
-        Returns:
-            Awaitable[Dict]: 服务器当前状态 ```[ 维护/正常/繁忙/爆满 ]```。
-        """
-        return await self.request(endpoint="/data/server/status", server=server)
-
-    #############
-    # VIP I API #
-    #############
+    ##########
+    # VIP  I #
+    ##########
 
     @require_token
     @require_ticket
-    async def save_detailed(self, *, server: str, roleId: str) -> Awaitable[Dict]:
+    async def save_detailed(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        roleid: Annotated[str, "角色UID，保存该角色的详细记录"],
+    ) -> Annotated[Awaitable[ResponseSaveDetailed], "自动更新角色信息"]:
         """
-        save_detailed 角色更新, 数据服务
+        save_detailed 角色更新
 
         自动更新角色信息。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            roleId (str): 角色数字标识，查找该标识的记录。
+            server (str): 区服，查找该区服的相关记录。
+            roleid (str): 角色UID，保存该角色的详细记录。
 
         Returns:
-            Awaitable[Dict]: 角色信息。
+            Awaitable[ResponseSaveDetailed]: 自动更新角色信息。
         """
         return await self.request(
-            endpoint="/data/save/detailed", server=server, roleid=roleId
+            endpoint="/data/save/detailed", server=server, roleid=roleid
         )
 
     @require_token
     @require_ticket
-    async def role_detailed(self, *, server: str, name: str) -> Awaitable[Dict]:
+    async def role_detailed(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找目标角色的相关记录"],
+    ) -> Annotated[Awaitable[ResponseRoleDetailed], "角色详细信息"]:
         """
         role_detailed 角色信息
 
-        角色详细信息。
+        角色详细信息
 
         Args:
-            server (str): 区服名称，查找目标区服的记录。
-            name (str): 角色名称，查找目标角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找目标角色的相关记录。
 
         Returns:
-            Awaitable[Dict]: 角色详细信息。
+            Awaitable[ResponseRoleDetailed]: 角色详细信息。
         """
         return await self.request(
             endpoint="/data/role/detailed", server=server, name=name
         )
 
     @require_token
-    async def school_matrix(self, *, name: str) -> Awaitable[Dict]:
+    async def school_matrix(
+        self, *, name: Annotated[str, "心法名称，查找该心法的相关记录"]
+    ) -> Annotated[Awaitable[ResponseSchoolMatrix], "职业阵眼效果"]:
         """
-        school_matrix 阵法效果
+        school_matrix 阵眼效果
 
-        职业阵眼效果。
+        职业阵眼效果
 
         Args:
-            name (str): 心法名称，查找该心法的记录。
+            name (str): 心法名称，查找该心法的相关记录。
 
         Returns:
-            Awaitable[Dict]: 职业阵眼效果。
+            Awaitable[ResponseSchoolMatrix]: 职业阵眼效果。
         """
         return await self.request(endpoint="/data/school/matrix", name=name)
 
     @require_token
-    async def school_force(self, *, name: str) -> Awaitable[List[Dict]]:
+    async def school_force(
+        self, *, name: Annotated[str, "心法名称，查找该心法的相关记录"]
+    ) -> Annotated[Awaitable[Sequence[ResponseSchoolForce]], "奇穴详细效果"]:
         """
         school_force 奇穴效果
 
-        奇穴详细效果。
+        奇穴详细效果
 
         Args:
-            name (str): 心法名称，查找该心法的记录。
+            name (str): 心法名称，查找该心法的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 奇穴详细效果。
+            Awaitable[Sequence[ResponseSchoolForce]]: 奇穴详细效果。
         """
         return await self.request(endpoint="/data/school/force", name=name)
 
     @require_token
-    async def school_skills(self, *, name: str) -> Awaitable[List[Dict]]:
+    async def school_skills(
+        self, *, name: Annotated[str, "心法名称，查找该心法的相关记录"]
+    ) -> Annotated[Awaitable[Sequence[ResponseSchoolSkills]], "技能详细效果"]:
         """
         school_skills 技能效果
 
-        技能详细效果。
+        技能详细效果
 
         Args:
-            name (str): 心法名称，查找该心法的记录。
+            name (str): 心法名称，查找该心法的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 技能详细信息。
+            Awaitable[Sequence[ResponseSchoolSkills]]: 技能详细效果。
         """
         return await self.request(endpoint="/data/school/skills", name=name)
 
     @require_token
     async def tieba_random(
-        self, *, subclass: str, server: str | None = None, limit: int = 1
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        class_: Annotated[
+            Literal[
+                "818",
+                "616",
+                "鬼网三",
+                "鬼网3",
+                "树洞",
+                "记录",
+                "教程",
+                "街拍",
+                "故事",
+                "避雷",
+                "吐槽",
+                "提问",
+            ],
+            "帖子分类",
+        ],
+        server: Annotated[
+            str, "区服名称，查找该区服的相关记录，默认值：``-`` 为全区服"
+        ] = "-",
+        limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseTiebaRandom]], "随机搜索贴吧 : 818/616...."
+    ]:
         """
         tieba_random 八卦帖子
 
-        禁止轮询，随机搜索贴吧: 818 / 616 。
+        禁止轮询，随机搜索贴吧 : 818/616....
 
         Args:
-            subclass (str): 帖子分类，可选范围：``818`` ``616`` ``鬼网三`` ``鬼网3`` ``树洞`` ``记录`` ``教程`` ``街拍`` ``故事`` ``避雷`` ``吐槽`` ``提问``。
-            server (str, optional): 区服名称，查找该区服的记录。
-            limit (int, optional): 单页数量，单页返回的数量。
+            class (str): 帖子分类，可选范围：``818`` ``616`` ``鬼网三`` ``鬼网3`` ``树洞`` ``记录`` ``教程`` ``街拍`` ``故事`` ``避雷`` ``吐槽`` ``提问``
+            server (str, optional): 区服名称，查找该区服的相关记录，默认值：``-`` 为全区服。
+            limit (int, optional): 限制查询结果的数量，默认值 ``10``。
 
         Returns:
-            Awaitable[List[Dict]]: 该服务器随机选择的结果。
+            Awaitable[Sequence[ResponseTiebaRandom]]: 随机搜索贴吧 : 818/616....
         """
         return await self.request(
-            endpoint="/data/tieba/random", subclass=subclass, server=server, limit=limit
+            endpoint="/data/tieba/random", class_=class_, server=server, limit=limit
         )
 
     @require_token
     @require_ticket
-    async def role_attribute(self, *, server: str, name: str) -> Awaitable[Dict]:
+    async def role_attribute(
+        self, server: Annotated[str, "服务器"], name: Annotated[str, "角色名"]
+    ) -> Awaitable[Dict]:
         """
-        role_attribute 装备属性
+        role_attribute 角色装备
 
-        角色装备属性详情。
+        角色装备属性详情
+
+        Args:
+            server (Annotated[str, ): 服务器。
+            name (Annotated[str,): 角色名。
+
+        Returns:
+            Awaitable[Dict]: 角色装备属性详情。
+        """
+        return await self.request(endpoint="/role/attribute", server=server, name=name)
+
+    @require_token
+    @require_ticket
+    async def role_team_cd_list(
+        self,
+        *,
+        server: Annotated[str, "区服名称，查找该区服的记录"],
+        name: Annotated[str, "角色名称，查找该角色的记录"],
+    ) -> Annotated[Awaitable[ResponseRoleTeamCdList], "角色副本记录"]:
+        """
+        role_team_cd_list 副本记录
+
+        角色副本记录
 
         Args:
             server (str): 区服名称，查找该区服的记录。
             name (str): 角色名称，查找该角色的记录。
 
         Returns:
-            Awaitable[Dict]: 装备属性详细信息。
-        """
-        return await self.request(
-            endpoint="/data/role/attribute", server=server, name=name
-        )
-
-    @require_token
-    @require_ticket
-    async def role_teamcdlist(self, *, server: str, name: str) -> Awaitable[Dict]:
-        """
-        role_teamcdlist 副本记录
-
-        角色副本记录。
-
-        Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
-
-        Returns:
-            Awaitable[Dict]: 副本记录。
+            Awaitable[ResponseRoleTeamCdList]: 角色副本记录。
         """
         return await self.request(
             endpoint="/data/role/teamCdList", server=server, name=name
         )
 
     @require_token
-    async def luck_adventure(self, *, server: str, name: str) -> Awaitable[List[Dict]]:
+    @require_ticket
+    async def luck_adventure(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找该角色的相关记录"],
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseLuckAdventure]], "角色奇遇触发记录(不保证遗漏)"
+    ]:
         """
         luck_adventure 奇遇记录
 
-        角色奇遇触发记录(不保证遗漏)。
+        角色奇遇触发记录(不保证遗漏)
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找该角色的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 奇遇记录。
+            Awaitable[Sequence[ResponseLuckAdventure]]: 角色奇遇触发记录(不保证遗漏)。
         """
         return await self.request(
             endpoint="/data/luck/adventure", server=server, name=name
@@ -1600,20 +1742,24 @@ class AsyncJX3API:
 
     @require_token
     async def luck_statistical(
-        self, *, server: str, name: str, limit: int = 20
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str, "区服名称，查找该区服的记录"],
+        name: Annotated[str, "奇遇名称，查找该奇遇的记录"],
+        limit: Annotated[int, "单页数量，单页返回的数量，默认值 : 20"] = 20,
+    ) -> Annotated[Awaitable[Sequence[ResponseLuckStatistical]], "奇遇近期触发统计"]:
         """
         luck_statistical 奇遇统计
 
-        奇遇近期触发统计。
+        奇遇近期触发统计
 
         Args:
             server (str): 区服名称，查找该区服的记录。
             name (str): 奇遇名称，查找该奇遇的记录。
-            limit (int, optional): 单页数量，单页返回的数量，默认值 : `20`。
+            limit (int, optional): 单页数量，单页返回的数量，默认值 : 20。
 
         Returns:
-            Awaitable[List[Dict]]: 奇遇近期触发统计。
+            Awaitable[Sequence[ResponseLuckStatistical]]: 奇遇近期触发统计。
         """
         return await self.request(
             endpoint="/data/luck/statistical", server=server, name=name, limit=limit
@@ -1621,8 +1767,14 @@ class AsyncJX3API:
 
     @require_token
     async def luck_server_statistical(
-        self, *, name: str, limit: int = 20
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        name: Annotated[str, "奇遇名称，查找该奇遇的全服统计"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseLuckServerStatistical]],
+        "统计全服近期奇遇记录，不区分区服",
+    ]:
         """
         luck_server_statistical 全服统计
 
@@ -1630,48 +1782,57 @@ class AsyncJX3API:
 
         Args:
             name (str): 奇遇名称，查找该奇遇的全服统计。
-            limit (int, optional): 单页数量，设置返回的数量，默认值: `20`。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            Awaitable[List[Dict]]: 全服近期奇遇记录。
+            Awaitable[Sequence[ResponseLuckServerStatistical]]: 统计全服近期奇遇记录，不区分区服。
         """
         return await self.request(
             endpoint="/data/luck/server/statistical", name=name, limit=limit
         )
 
     @require_token
-    async def luck_collect(self, *, server: str, num: int = 7) -> Awaitable[List[Dict]]:
+    async def luck_collect(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        num: Annotated[int, "汇总时间，汇总指定天数内的记录，默认值 : 7"] = 7,
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseLuckCollect]], "统计奇遇近期触发角色记录"
+    ]:
         """
         luck_collect 奇遇汇总
 
-        统计奇遇近期触发角色记录。
+        统计奇遇近期触发角色记录
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            num (int, optional): 汇总时间，汇总指定天数内的记录，默认值: `7`。
+            server (str): 区服，查找该区服的相关记录。
+            num (int, optional): 汇总时间，汇总指定天数内的记录，默认值 : 7。
 
         Returns:
-            Awaitable[List[Dict]]: 奇遇触发记录。
+            Awaitable[Sequence[ResponseLuckCollect]]: 统计奇遇近期触发角色记录。
         """
         return await self.request(endpoint="/data/luck/collect", server=server, num=num)
 
-    @require_token
-    @require_ticket
     async def role_achievement(
-        self, *, server: str, role: str, name: str
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        role: Annotated[str, "角色名称，查找该角色的成就记录"],
+        name: Annotated[str, "成就/系列名称，查询该成就/系列的完成进度"],
+    ) -> Annotated[Awaitable[ResponseRoleAchievement], "角色成就进度"]:
         """
         role_achievement 成就百科
 
-        角色成就进度。
+        角色成就进度
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            role (str): 角色名称，查找该角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            role (str): 角色名称，查找该角色的成就记录。
             name (str): 成就/系列名称，查询该成就/系列的完成进度。
 
         Returns:
-            Awaitable[List[Dict]]: 角色成就进度。
+            Awaitable[ResponseRoleAchievement]: 角色成就进度。
         """
         return await self.request(
             endpoint="/data/role/achievement", server=server, role=role, name=name
@@ -1680,22 +1841,24 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def match_recent(
-        self, *, server: str, name: str, mode: int = 0
-    ) -> Awaitable[Dict]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找该角色的相关记录"],
+        mode: Annotated[int | None, "比赛模式，查找该模式的相关记录"] = None,
+    ) -> Annotated[Awaitable[ResponseMatchRecent], "角色近期战绩记录"]:
         """
         match_recent 名剑战绩
 
-        角色近期战绩记录。
-        未输入比赛模式时，将返回推栏全部角色近期的比赛记录(推栏个人页面，会出现返回结果非指定角色数据)。
-        根据 ``mode`` 参数请求返回不同的数据结构，最终数据以返回为准。
+        角色近期战绩记录
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
-            mode (int, optional): 比赛模式，查找该模式的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找该角色的相关记录。
+            mode (int, optional): 比赛模式，查找该模式的相关记录。
 
         Returns:
-            Awaitable[Dict]: 角色近期战绩记录。
+            Awaitable[ResponseMatchRecent]: 角色近期战绩记录。
         """
         return await self.request(
             endpoint="/data/match/recent", server=server, name=name, mode=mode
@@ -1704,19 +1867,22 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def match_awesome(
-        self, *, mode: int = 33, limit: int = 20
-    ) -> Awaitable[Dict]:
+        self,
+        *,
+        mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
+        limit: Annotated[int, "限制查询结果的数量，默认值 20"] = 20,
+    ) -> Annotated[Awaitable[Sequence[ResponseMatchAwesome]], "角色近期战绩记录"]:
         """
         match_awesome 名剑排行
 
         角色近期战绩记录。
 
         Args:
-            mode (int, optional): 比赛模式，查找该模式的记录，默认值: `33`。
-            limit (int, optional): 单页数量，设置返回的数量，默认值: `20`。
+            mode (int, optional): 比赛模式，查找该模式的相关记录，默认值 : 33. Defaults to 33.
+            limit (int, optional): 限制查询结果的数量，默认值 20。
 
         Returns:
-            Awaitable[Dict]: 名剑排行。
+            Awaitable[Sequence[ResponseMatchAwesome]]: 角色近期战绩记录。
         """
         return await self.request(
             endpoint="/data/match/awesome", mode=mode, limit=limit
@@ -1724,36 +1890,49 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def match_schools(self, *, mode: int = 33) -> Awaitable[List[Dict]]:
+    async def match_schools(
+        self,
+        *,
+        mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
+    ) -> Annotated[Awaitable[Sequence[ResponseMatchSchools]], "角色近期战绩记录"]:
         """
         match_schools 名剑统计
 
-        角色近期战绩记录。
+        角色近期战绩记录
 
         Args:
-            mode (int, optional): 比赛模式，查找该模式的记录，默认值: `33`。
+            mode (int, optional): 比赛模式，查找该模式的相关记录，默认值 : 33。
 
         Returns:
-            Awaitable[List[Dict]]: 角色近期战绩记录。
+            Awaitable[Sequence[ResponseMatchSchools]]: 角色近期战绩记录.
         """
         return await self.request(endpoint="/data/match/schools", mode=mode)
 
     @require_token
     async def member_recruit(
-        self, *, server: str, keyword: str | None = None, table: int = 1
-    ) -> Awaitable[Dict]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        keyword: Annotated[
+            str | None, "关键字，模糊匹配记录，用``=关键字``完全匹配记录"
+        ] = None,
+        table: Annotated[
+            int,
+            "指定表记录，``1``=``本服+跨服``，``2``=``本服``，``3``=``跨服``，默认值：``1``",
+        ] = 1,
+    ) -> Annotated[Awaitable[ResponseMemberRecruit], "团队招募信息"]:
         """
         member_recruit 团队招募
 
-        团队招募信息。
+        团队招募信息
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            keyword (str, optional): 关键字，模糊匹配记录，用`=关键字`完全匹配记录。
-            table (int, optional): 指定表记录，`1`=`本服+跨服`，`2`=`本服`，`3`=`跨服`，默认值：`1`。
+            server (str): 区服，查找该区服的相关记录。
+            keyword (str, optional): 关键字，模糊匹配记录，用``=关键字``完全匹配记录。
+            table (int, optional): 指定表记录，``1``=``本服+跨服``，``2``=``本服``，``3``=``跨服``，默认值：``1``。
 
         Returns:
-            Awaitable[Dict]: 团队招募信息。
+            Awaitable[ResponseMemberRecruit]: 团队招募信息。
         """
         return await self.request(
             endpoint="/data/member/recruit", server=server, keyword=keyword, table=table
@@ -1761,19 +1940,22 @@ class AsyncJX3API:
 
     @require_token
     async def member_teacher(
-        self, *, server: str, keyword: str | None = None
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        keyword: Annotated[str | None, "关键字，查找该关键字的相关记录"] = None,
+    ) -> Annotated[Awaitable[ResponseMemberTeacher], "师父列表"]:
         """
         member_teacher 师父列表
 
-        客户端师徒系统。
+        客户端师徒系统
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            keyword (str, optional): 关键字，查找该关键字的记录。
+            server (str): 区服，查找该区服的相关记录。
+            keyword (str, optional): 关键字，查找该关键字的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 师父列表。
+            Awaitable[ResponseMemberTeacher]: 师父列表。
         """
         return await self.request(
             endpoint="/data/member/teacher", server=server, keyword=keyword
@@ -1781,106 +1963,133 @@ class AsyncJX3API:
 
     @require_token
     async def member_student(
-        self, *, server: str, keyword: str | None = None
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        keyword: Annotated[str | None, "关键字，查找该关键字的相关记录"] = None,
+    ) -> Annotated[Awaitable[ResponseMemberStudent], "徒弟列表"]:
         """
         member_student 徒弟列表
 
-        客户端师徒系统。
+        客户端师徒系统
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            keyword (str, optional): 关键字，查找该关键字的记录。
+            server (str): 区服，查找该区服的相关记录。
+            keyword (str, optional): 关键字，查找该关键字的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 徒弟列表。
+            Awaitable[ResponseMemberStudent]: 徒弟列表。
         """
         return await self.request(
             endpoint="/data/member/student", server=server, keyword=keyword
         )
 
     @require_token
-    async def server_sand(self, *, server: str) -> Awaitable[Dict]:
+    async def server_sand(
+        self, *, server: Annotated[str, "区服，查找该区服的相关记录"]
+    ) -> Annotated[Awaitable[ResponseServerSand], "阵营沙盘信息"]:
         """
         server_sand 沙盘信息
 
         查看阵营沙盘信息。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 区服，查找该区服的相关记录。
 
         Returns:
-            Awaitable[Dict]: 沙盘信息。
+            Awaitable[ResponseServerSand]: 阵营沙盘信息。
         """
         return await self.request(endpoint="/data/server/sand", server=server)
 
     @require_token
-    async def server_event(self, *, limit: int = 100) -> Awaitable[List[Dict]]:
+    async def server_event(
+        self,
+        *,
+        name: Annotated[str | None, "阵营名称，查找该阵营的相关记录"] = None,
+        limit: Annotated[int, "限制查询结果的数量，默认值 100", 100],
+    ) -> Annotated[Awaitable[Sequence[ResponseServerEvent]], "全服阵营大事件"]:
         """
         server_event 阵营事件
 
-        全服阵营大事件。
+        全服阵营大事件
 
         Args:
-            limit (int, optional): 单页数量，设置返回数量，默认值: 100。
+            name (str, optional): 阵营名称，查找该阵营的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 100。
 
         Returns:
-            Awaitable[List[Dict]]: 阵营事件详细列表。
+            Awaitable[Sequence[ResponseServerEvent]]: 全服阵营大事件。
         """
-        return await self.request(endpoint="/data/server/event", limit=limit)
+        return await self.request(endpoint="/data/server/event", name=name, limit=limit)
 
     @require_token
     async def trade_demon(
-        self, *, server: str | None = None, limit: int = 10
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str | None, "指定区服，查找该区服的相关记录，可选"] = None,
+        limit: Annotated[int, "限制查询结果的数量，默认值 10，可选"] = 10,
+    ) -> Annotated[Awaitable[Sequence[ResponseTradeDemon]], "金价比例信息"]:
         """
         trade_demon 金币比例
 
-        金价比例信息。
-        未输入区服名称或输入错误区服名称时，将返回全部区服的金币比例信息。
+        金价比例信息
 
         Args:
-            server (str, optional): 区服名称，查找该区服的记录。
-            limit (int, optional): 单页数量，设置返回的数量，默认值: ``10``。
+            server (str, optional): 指定区服，查找该区服的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            Awaitable[List[Dict]]: 金币比例信息。
+            Sequence[ResponseTradeDemon]: 金价比例信息
         """
         return await self.request(
             endpoint="/data/trade/demon", server=server, limit=limit
         )
 
     @require_token
-    async def trade_record(self, name: str) -> Awaitable[Dict]:
+    async def trade_record(
+        self,
+        *,
+        name: Annotated[str, "外观名称，查找该外观的记录"],
+        server: Annotated[str | None, "区服，查找该区服的相关记录"] = None,
+    ) -> Annotated[Awaitable[ResponseTradeRecord], "黑市物品价格统计"]:
         """
         trade_record 物品价格
 
-        黑市物品价格统计。
+        黑市物品价格统计
 
         Args:
             name (str): 外观名称，查找该外观的记录。
+            server (str, optional): 区服，查找该区服的相关记录。
 
         Returns:
-            Awaitable[Dict]: 物品价格。
+            ResponseTradeRecord: 黑市物品价格统计。
         """
-        return await self.request(endpoint="/data/trade/record", name=name)
+        return await self.request(
+            endpoint="/data/trade/record", server=server, name=name
+        )
 
     @require_token
     async def tieba_item_records(
-        self, *, name: str, server: str | None = "", limit: int = 1
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[
+            str, "区服，查找该区服的相关记录，默认值：``-`` 为全区服"
+        ] = "-",
+        name: Annotated[str, "物品名称，查找该物品的相关记录"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
+    ) -> Annotated[Awaitable[Sequence[ResponseTiebaItemRecords]], "来自贴吧的外观记录"]:
         """
         tieba_item_records 贴吧记录
 
         来自贴吧的外观记录。
 
         Args:
-            name (str): 外观名称，查找该外观的记录。
-            server (str, optional): 区服名称，查找该区服的记录，默认值：``-`` 为全区服。
-            limit (int, optional): 单页数量，设置返回的数量，默认值：1。
+            server (str, optional): 区服，查找该区服的相关记录，默认值：``-`` 为全区服。
+            name (str): 物品名称，查找该物品的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 ``10``。
 
         Returns:
-            Awaitable[List[Dict]]: 贴吧记录。
+            Awaitable[Sequence[ResponseTiebaItemRecords]]: 来自贴吧的外观记录。
         """
         return await self.request(
             endpoint="/data/tieba/item/records", server=server, name=name, limit=limit
@@ -1888,113 +2097,127 @@ class AsyncJX3API:
 
     @require_token
     async def valuables_statistical(
-        self, *, name: str, limit: int = 20
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "物品名称，查找该物品的相关记录"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 20"] = 20,
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseValuablesStatistical]], "统计副本掉落的贵重物品"
+    ]:
         """
         valuables_statistical 掉落统计
 
         统计副本掉落的贵重物品。
 
         Args:
-            name (str): 物品名称，查找该物品的记录。
-            limit (int, optional): 单页数量，设置返回的数量，默认值：`20`。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 物品名称，查找该物品的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 20。
 
         Returns:
-            Awaitable[List[Dict]]: 贵重物品掉落记录。
+            Awaitable[Sequence[ResponseValuablesStatistical]]: 统计副本掉落的贵重物品。
         """
         return await self.request(
-            endpoint="/data/valuables/statistical", name=name, limit=limit
+            endpoint="/data/valuables/statistical",
+            server=server,
+            name=name,
+            limit=limit,
         )
 
     @require_token
     async def valuables_server_statistical(
-        self, *, name: str, limit: int = 30
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        name: Annotated[str, "物品名称，查找该物品的相关记录"],
+        limit: Annotated[int, "限制查询结果的数量，默认值 10"] = 10,
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseValuablesServerStatistical]],
+        "统计当前赛季副本掉落的特殊物品",
+    ]:
         """
         valuables_server_statistical 全服掉落
 
         统计当前赛季副本掉落的特殊物品。
 
         Args:
-            name (str): 物品名称，查找该物品的记录。
-            limit (int, optional): 单页数量，设置返回的数量，默认值 : ``30``。
+            name (str): 物品名称，查找该物品的相关记录。
+            limit (int, optional): 限制查询结果的数量，默认值 10。
 
         Returns:
-            Awaitable[List[Dict]]: 全服掉落物品记录。
+            Awaitable[Sequence[ResponseValuablesServerStatistical]]: 统计当前赛季副本掉落的特殊物品。
         """
         return await self.request(
             endpoint="/data/valuables/server/statistical", name=name, limit=limit
         )
 
     @require_token
-    async def valuables_collect(
-        self, *, server: str, num: int = 7
-    ) -> Awaitable[List[Dict]]:
-        """
-        valuables_collect 掉落汇总
-
-        副本掉落的特殊物品。
-
-        Args:
-            server (str): 区服名称，查找该区服的记录。
-            num (int, optional): 统计范围，默认值 ``7`` 天。
-
-        Returns:
-            Awaitable[List[Dict]]: 掉落汇总信息。
-        """
-        return await self.request(
-            endpoint="/data/valuables/collect", server=server, num=num
-        )
-
-    @require_token
-    async def server_antivice(self) -> Awaitable[List[Dict]]:
+    async def server_antivice(
+        self, *, server: Annotated[str | None, "服务器"] = None
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseServerAntivice]], "诛恶事件历史记录(不允许轮询)"
+    ]:
         """
         server_antivice 诛恶事件
 
-        诛恶事件历史记录。
-        不允许轮询。
+        诛恶事件历史记录(不允许轮询)
+
+        Args:
+            server (str, optional): 服务器。
 
         Returns:
-            Awaitable[List[Dict]]: 诛恶事件历史记录。
+            Awaitable[Sequence[ResponseServerAntivice]]: 诛恶事件历史记录(不允许轮询)。
         """
         return await self.request(endpoint="/data/server/antivice")
 
     @require_token
     async def rank_statistical(
-        self, *, table: str, name: str, server: str
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        table: Annotated[str, "榜单类型"],
+        name: Annotated[str, "榜单名称"],
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseRankStatistical]], "客户端战功榜与风云录"
+    ]:
         """
         rank_statistical 风云榜单
 
         客户端战功榜与风云录。
 
         Args:
+            server (str): 区服，查找该区服的相关记录。
             table (str): 榜单类型。
             name (str): 榜单名称。
-            server (str): 区服名称。
 
         Returns:
-            Awaitable[List[Dict]]: 风云榜单。
+            Awaitable[Sequence[ResponseRankStatistical]]: 客户端战功榜与风云录。
         """
         return await self.request(
-            endpoint="/data/rank/statistical", table=table, name=name, server=server
+            endpoint="/data/rank/statistical", server=server, table=table, name=name
         )
 
     @require_token
     async def rank_server_statistical(
-        self, *, table: str, name: str
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        table: Annotated[str, "榜单类型，个人/帮会/阵营/试炼"],
+        name: Annotated[str, "榜单名称"],
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseRankServerStatistical]], "客户端战功榜与风云录"
+    ]:
         """
-        server_rank 全服榜单
+        rank_server_statistical 全服榜单
 
-        客户端战功榜与风云录
+        客户端战功榜与风云录。
 
         Args:
-            table (str): 榜单类型。
+            table (str): 榜单类型，个人/帮会/阵营/试炼。
             name (str): 榜单名称。
+            token (str): 站点标识，检查请求权限。
 
         Returns:
-            Awaitable[List[Dict]]: 全服榜单。
+            Awaitable[Sequence[ResponseRankServerStatistical]]: 客户端战功榜与风云录。
         """
         return await self.request(
             endpoint="/data/rank/server/statistical", table=table, name=name
@@ -2003,341 +2226,186 @@ class AsyncJX3API:
     @require_token
     @require_ticket
     async def school_rank_statistical(
-        self, *, school: str | None = "ALL", server: str | None = "ALL"
-    ) -> Awaitable[List[Dict]]:
+        self,
+        *,
+        school: Annotated[str, "门派简称，查找该心法的相关记录，默认值 : ALL"] = "ALL",
+        server: Annotated[str, "指定区服，查找该区服的相关记录，默认值 : ALL"] = "ALL",
+    ) -> Annotated[Awaitable[Sequence[ResponseSchoolRankStatistical]], "游戏资历榜单"]:
         """
-        rank_statistical 资历榜单
+        school_rank_statistical 资历榜单
 
-        游戏资历榜单。
+        游戏资历榜单
 
         Args:
-            school (str, optional): 门派简称，查找该心法的记录，默认值: ``ALL``。
-            server (str, optional): 区服名称，查找该区服的记录，默认值: ``ALL``。
+            school (str, optional): 门派简称，查找该心法的相关记录，默认值 : ALL。
+            server (str, optional): 指定区服，查找该区服的相关记录，默认值 : ALL。
 
         Returns:
-            Awaitable[List[Dict]]: 游戏资历榜单。
+            Awaitable[Sequence[ResponseSchoolRankStatistical]]: 游戏资历榜单。
         """
         return await self.request(
             endpoint="/data/school/rank/statistical", school=school, server=server
         )
 
-    @require_token
-    async def duowan_statistical(
-        self, *, server: str | None = None
-    ) -> Awaitable[List[Dict]]:
-        """
-        duowan_statistical 歪歪频道
-
-        服务器的统战歪歪。
-
-        Args:
-            server (str, optional): 区服名称，查找该区服的记录。
-
-        Returns:
-            Awaitable[List[Dict]]: 歪歪频道信息。
-        """
-        return await self.request(endpoint="/data/duowan/statistical", server=server)
-
-    ##############
-    # VIP II API #
-    ##############
+    ##########
+    # VIP II #
+    ##########
 
     @require_token
-    async def active_monster(self, *, token: str) -> Awaitable[Dict]:
+    async def active_monster(
+        self,
+    ) -> Annotated[
+        Awaitable[ResponseActiveMonster], "本周百战异闻录刷新的首领以及特殊效果"
+    ]:
         """
         active_monster 百战首领
 
         本周百战异闻录刷新的首领以及特殊效果。
 
-        Args:
-            token (str): 站点标识，检查请求权限。
-
         Returns:
-            Awaitable[Dict]: 本周百战异闻录刷新的首领以及特殊效果。
+            Awaitable[ResponseActiveMonster]: 本周百战异闻录刷新的首领以及特殊效果。
         """
-        return await self.request(endpoint="/data/active/monster", token=token)
+        return await self.request(endpoint="/data/active/monster")
 
     @require_token
-    async def horse_ecords(self, *, server: str | None = None) -> Awaitable[List[Dict]]:
+    async def horse_record(
+        self, *, server: Annotated[str, "可选的服务器，查找该区服的相关记录"]
+    ) -> Annotated[Awaitable[Sequence[ResponseHorseRecord]], "客户端的卢刷新记录"]:
         """
-        horse_records 的卢统计
+        horse_record 的卢统计
 
         客户端的卢刷新记录。
 
         Args:
-            server (str, optional): 区服名称，查找该区服的记录。
+            server (str): 可选的服务器，查找该区服的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 的卢统计。
+            Awaitable[Sequence[ResponseHorseRecord]]: 客户端的卢刷新记录。
         """
-        return await self.request(endpoint="/data/horse/records", server=server)
+        return await self.request(endpoint="/data/horse/record", server=server)
 
     @require_token
-    async def horse_event(self, *, server: str) -> Awaitable[Dict]:
+    async def horse_ranch(
+        self, *, server: Annotated[str, "区服，查找该区服的相关记录"]
+    ) -> Annotated[Awaitable[ResponseHorseRanch], "客户端马场刷新记录"]:
         """
-        horse_event 马场事件
+        horse_ranch 马场事件
 
         客户端马场刷新记录。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 区服，查找该区服的相关记录。
 
         Returns:
-            Awaitable[Dict]: 马场刷新记录。
+            Awaitable[ResponseHorseRanch]: 客户端马场刷新记录。
         """
-        return await self.request(endpoint="/data/horse/event", server=server)
+        return await self.request(endpoint="/data/horse/ranch", server=server)
 
     @require_token
-    async def watch_record(self, *, server: str, name: str) -> Awaitable[List[Dict]]:
+    async def firework_record(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "角色名称，查找该角色的相关记录"],
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseFireworkRecord]],
+        "烟花赠送与接收的历史记录，不保证遗漏",
+    ]:
         """
-        watch_record 烟花记录
+        firework_record 烟花记录
 
         烟花赠送与接收的历史记录，不保证遗漏。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 角色名称，查找该角色的记录。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 角色名称，查找该角色的相关记录。
 
         Returns:
-            Awaitable[List[Dict]]: 烟花记录。
+            Awaitable[Sequence[ResponseFireworkRecord]]: 烟花赠送与接收的历史记录，不保证遗漏。
         """
         return await self.request(
-            endpoint="/data/watch/record", server=server, name=name
+            endpoint="/data/firework/record", server=server, name=name
         )
 
     @require_token
-    async def watch_statistical(
-        self, *, server: str, name: str, limit: int = 20
-    ) -> Awaitable[List[Dict]]:
+    async def firework_statistical(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        name: Annotated[str, "烟花名称，查找该烟花的相关统计"],
+        limit: Annotated[int, "单页数量，设置返回的数量，默认值 : 20"] = 20,
+    ) -> Annotated[Awaitable[Sequence[ResponseFireworkStatistical]], "统计烟花记录"]:
         """
-        watch_statistical 烟花统计
+        firework_statistical 烟花统计
 
         统计烟花记录。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            name (str): 烟花名称，查找该烟花的记录。
-            limit (int, optional): 单页数量，设置返回的数量。
+            server (str): 区服，查找该区服的相关记录。
+            name (str): 烟花名称，查找该烟花的相关统计。
+            limit (int, optional): 单页数量，设置返回的数量，默认值 : 20。
 
         Returns:
-            Awaitable[List[Dict]]: 烟花统计记录。
+            Awaitable[Sequence[ResponseFireworkStatistical]]: 统计烟花记录。
         """
         return await self.request(
-            endpoint="/data/watch/statistical", server=server, name=name, limit=limit
+            endpoint="/data/firework/statistical", server=server, name=name, limit=limit
         )
 
     @require_token
-    async def watch_collect(
-        self, *, server: str, num: int = 7
-    ) -> Awaitable[List[Dict]]:
+    async def firework_collect(
+        self,
+        *,
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        num: Annotated[int, "统计时间，默认值：7 天"] = 7,
+    ) -> Annotated[Awaitable[Sequence[ResponseFireworkCollect]], "汇总烟花记录"]:
         """
-        watch_collect 烟花汇总
+        firework_collect 烟花汇总
 
         汇总烟花记录。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
+            server (str): 区服，查找该区服的相关记录。
             num (int, optional): 统计时间，默认值：7 天。
 
         Returns:
-            Awaitable[List[Dict]]: 烟花汇总记录。
+            Awaitable[Sequence[ResponseFireworkCollect]]: 汇总烟花记录。
         """
         return await self.request(
-            endpoint="/data/watch/collect", server=server, num=num
+            endpoint="/data/firework/collect", server=server, num=num
         )
 
     @require_token
-    async def watch_rank_statistical(
+    async def firework_rank_statistical(
         self,
         *,
-        server: str,
-        column: Literal["sender", "recipient", "name"],
-        this_time: int,
-        that_time: int,
-    ) -> Awaitable[List[Dict]]:
+        server: Annotated[str, "区服，查找该区服的相关记录"],
+        column: Annotated[str, "可选范围：[sender recipient name]"],
+        this_time: Annotated[int, "统计开始的时间，与结束的时间不得超过3个月"],
+        that_time: Annotated[int, "统计结束的时间，与开始的时间不得超过3个月"],
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseFireworkRankStatistical]], "烟花赠送与接收的榜单"
+    ]:
         """
-        rank_statistical 烟花排行
+        firework_rank_statistical 烟花排行
 
         烟花赠送与接收的榜单。
 
         Args:
-            server (str): 区服名称，查找该区服的记录。
-            column (str): 可选范围：[``sender`` ``recipient`` ``name``]。
+            server (str): 区服，查找该区服的相关记录。
+            column (str): 可选范围：[sender recipient name]。
             this_time (int): 统计开始的时间，与结束的时间不得超过3个月。
             that_time (int): 统计结束的时间，与开始的时间不得超过3个月。
 
         Returns:
-            Awaitable[List[Dict]]: 烟花排行信息。
+            Awaitable[Sequence[ResponseFireworkRankStatistical]]: 烟花赠送与接收的榜单。
         """
         return await self.request(
-            endpoint="/data/watch/rank/statistical",
+            endpoint="/data/firework/rank/statistical",
             server=server,
             column=column,
             this_time=this_time,
             that_time=that_time,
-        )
-
-    ###########
-    # VRF API #
-    ###########
-
-    @require_token
-    async def chat_mixed(self, *, name: str, text: str) -> Awaitable[Dict]:
-        """
-        chat_mixed 智障聊天
-
-        Args:
-            name (str): 机器人的名称。
-            text (str): 聊天的完整内容。
-
-        Returns:
-            Awaitable[Dict]: 聊天的详细内容。
-        """
-        return await self.request(endpoint="/data/chat/mixed", name=name, text=text)
-
-    @require_token
-    async def music_tencent(self, *, name: str) -> Awaitable[List[Dict]]:
-        """
-        music_tencent 腾讯音乐
-
-        搜索腾讯音乐歌曲编号。
-
-        Args:
-            name (str): 歌曲名称，查找歌曲的编号。
-
-        Returns:
-            Awaitable[List[Dict]]: 腾讯音乐编号信息。
-        """
-        return await self.request(endpoint="/data/music/tencent", name=name)
-
-    @require_token
-    async def music_netease(self, *, name: str) -> Awaitable[List[Dict]]:
-        """
-        music_netease 网易音乐
-
-        搜索网易云音乐歌曲编号。
-
-        Args:
-            name (str): 歌曲名称，查找该歌曲的编号。
-
-        Returns:
-            Awaitable[List[Dict]]: 网易云音乐歌曲编号。
-        """
-        return await self.request(endpoint="/data/music/netease", name=name)
-
-    @require_token
-    async def music_kugou(self, *, name: str) -> Awaitable[Dict]:
-        """
-        music_kugou 酷狗音乐
-
-        搜索酷狗音乐歌曲编号。
-
-        Args:
-            name (str): 歌曲名称，查找该歌曲的编号。
-
-        Returns:
-            Awaitable[Dict]: 酷狗音乐歌曲信息。
-        """
-        return await self.request(endpoint="/data/music/kugou", name=name)
-
-    @require_token
-    async def fraud_detail(self, *, uin: int) -> Awaitable[Dict]:
-        """
-        fraud_detail 骗子记录
-
-        搜索贴吧的行骗记录。
-
-        Args:
-            uin (int): 用户QQ号，查找是否存在行骗记录。
-
-        Returns:
-            Awaitable[Dict]: 骗子记录。
-        """
-        return await self.request(endpoint="/data/fraud/detail", uin=uin)
-
-    async def idiom_solitaire(self, *, name: str) -> Awaitable[Dict]:
-        """
-        idiom_solitaire 成语接龙
-
-        校对成语并返回相关成语
-
-        Args:
-            name (str): 查找对应词语。
-
-        Returns:
-            Awaitable[Dict]: 成语及其信息
-        """
-        return await self.request(endpoint="/data/idiom/solitaire", name=name)
-
-    async def saohua_random(self) -> Awaitable[Dict]:
-        """
-        saohua_random 撩人骚话
-
-        万花门派骚话。
-
-        Returns:
-            Awaitable[Dict]: 骚话。
-        """
-        return await self.request(endpoint="/data/saohua/random")
-
-    async def saohua_content(self) -> Awaitable[Dict]:
-        """
-        saohua_content 舔狗日记
-
-        召唤一条舔狗日记。
-
-        Returns:
-            Awaitable[Dict]: 舔狗日记。
-        """
-        return await self.request(endpoint="/data/saohua/content")
-
-    async def sound_converter(
-        self,
-        *,
-        appkey: str,
-        access: str,
-        secret: str,
-        text: str,
-        voice: str = "Aitong",
-        format: str = "mp3",
-        sample_rate: int = 16000,
-        volume: int = 50,
-        speech_rate: int = 0,
-        pitch_rate: int = 0,
-    ) -> Awaitable[Dict]:
-        """
-        converter 语音合成
-
-        阿里云语音合成（TTS）。
-
-        Args:
-            appkey (str): 阿里云身份识别，`[点击申请](https://nls-portal.console.aliyun.com/overview)`。
-            access (str): 阿里云身份识别，`[点击申请](https://usercenter.console.aliyun.com)`。
-            secret (str): 阿里云身份识别，`[点击申请](https://usercenter.console.aliyun.com)`。
-            text (str): 合成的内容。
-            voice (str, optional): 发音人，默认值 `[Aitong]`，`[点击查看](https://help.aliyun.com/knowledge_detail/84435.html?spm=a2c4g.11186631.2.1.67045663WlpL4n)`。
-            format (str, optional): 编码格式，范围 `[PCM][WAV][MP3]`，默认值 `[MP3]`。
-            sample_rate (int, optional): 采样率，默认值 `[16000]`。
-            volume (int, optional): 音量，范围 `[0～100]`，默认值 `[50]`。
-            speech_rate (int, optional): 语速，范围 `[-500～500]`，默认值 `[0]`。
-            pitch_rate (int, optional): 音调，范围 `[-500～500]`，默认值 `[0]`。
-
-        Returns:
-            Awaitable[Dict]: 语音合成信息。
-        """
-
-        return await self.request(
-            endpoint="/data/sound/converter",
-            appkey=appkey,
-            access=access,
-            secret=secret,
-            text=text,
-            voice=voice,
-            format=format,
-            sample_rate=sample_rate,
-            volume=volume,
-            speech_rate=speech_rate,
-            pitch_rate=pitch_rate,
         )
 
     #############
