@@ -573,7 +573,7 @@ class ResponseTradeDemon(TypedDict):
 
 
 class _TradeRecord(TypedDict):
-    id: Annotated[int, "记录ID"]
+    id: Annotated[str, "记录ID"]
     index: Annotated[int, "物品索引"]
     zone: Annotated[str, "区服类型"]
     server: Annotated[str, "区服名称"]
@@ -604,7 +604,7 @@ class ResponseTradeRecord(TypedDict):
     data: Annotated[Sequence[Sequence[_TradeRecord]], "物品价格数据"]
 
 
-class ResponseTiebaItemRecords(TypedDict):
+class ResponseTiebaItemRecord(TypedDict):
     id: Annotated[int, "记录 ID"]
     zone: Annotated[str, "区服"]
     server: Annotated[str, "服务器"]

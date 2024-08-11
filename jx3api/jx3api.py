@@ -62,7 +62,7 @@ from .response import (
     ResponseServerMaster,
     ResponseServerSand,
     ResponseServerStatus,
-    ResponseTiebaItemRecords,
+    ResponseTiebaItemRecord,
     ResponseTiebaRandom,
     ResponseTradeDemon,
     ResponseTradeRecord,
@@ -901,7 +901,7 @@ class JX3API:
         return self.request(endpoint="/data/trade/record", server=server, name=name)
 
     @require_token
-    def tieba_item_records(
+    def tieba_item_record(
         self,
         *,
         server: Annotated[
@@ -909,9 +909,9 @@ class JX3API:
         ] = "-",
         name: Annotated[str, "物品名称，查找该物品的相关记录"],
         limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
-    ) -> Annotated[Sequence[ResponseTiebaItemRecords], "来自贴吧的外观记录"]:
+    ) -> Annotated[Sequence[ResponseTiebaItemRecord], "来自贴吧的外观记录"]:
         """
-        tieba_item_records 贴吧记录
+        tieba_item_record 贴吧记录
 
         来自贴吧的外观记录。
 
@@ -921,10 +921,10 @@ class JX3API:
             limit (int, optional): 限制查询结果的数量，默认值 ``10``。
 
         Returns:
-            Sequence[ResponseTiebaItemRecords]: 来自贴吧的外观记录。
+            Sequence[ResponseTiebaItemRecord]: 来自贴吧的外观记录。
         """
         return self.request(
-            endpoint="/data/tieba/item/records", server=server, name=name, limit=limit
+            endpoint="/data/tieba/item/record", server=server, name=name, limit=limit
         )
 
     @require_token
