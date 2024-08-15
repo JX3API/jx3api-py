@@ -29,11 +29,13 @@ from .response import (
     ResponseFireworkRankStatistical,
     ResponseFireworkRecord,
     ResponseFireworkStatistical,
+    ResponseFraudDetailed,
     ResponseHomeFlower,
     ResponseHomeFurniture,
     ResponseHomeTravel,
     ResponseHorseRanch,
     ResponseHorseRecord,
+    ResponseIdiomSolitaire,
     ResponseLuckAdventure,
     ResponseLuckCollect,
     ResponseLuckServerStatistical,
@@ -44,6 +46,10 @@ from .response import (
     ResponseMemberRecruit,
     ResponseMemberStudent,
     ResponseMemberTeacher,
+    ResponseMixedChat,
+    ResponseMusicKugou,
+    ResponseMusicNetease,
+    ResponseMusicTencent,
     ResponseNewsAllnews,
     ResponseNewsAnnounce,
     ResponseRankServerStatistical,
@@ -51,6 +57,8 @@ from .response import (
     ResponseRoleAchievement,
     ResponseRoleDetailed,
     ResponseRoleTeamCdList,
+    ResponseSaohuaContent,
+    ResponseSaohuaRandom,
     ResponseSaveDetailed,
     ResponseSchoolForce,
     ResponseSchoolMatrix,
@@ -62,6 +70,7 @@ from .response import (
     ResponseServerMaster,
     ResponseServerSand,
     ResponseServerStatus,
+    ResponseSoundConverter,
     ResponseTiebaItemRecord,
     ResponseTiebaRandom,
     ResponseTradeDemon,
@@ -1220,6 +1229,189 @@ class JX3API:
             that_time=that_time,
         )
 
+    #############
+    #    VRF    #
+    #############
+    @require_token
+    def mixed_chat(
+        self,
+        *,
+        name: Annotated[str, "机器人的名称"],
+        text: Annotated[str, "聊天的完整内容"],
+    ) -> Annotated[ResponseMixedChat, "智障聊天"]:
+        """
+        mixed_chat 智障聊天
+
+        Args:
+            name (str): 机器人的名称。
+            text (str): 聊天的完整内容。
+
+        Returns:
+            ResponseMixedChat: 智障聊天。
+        """
+        return self.request(endpoint="/data/mixed/chat", name=name, text=text)
+
+    def music_tencent(
+        self,
+        *,
+        name: Annotated[str, "歌曲名称，查找歌曲的编号"],
+    ) -> Annotated[Sequence[ResponseMusicTencent], "搜索腾讯音乐歌曲编号"]:
+        """
+        music_tencent 腾讯音乐
+
+        搜索腾讯音乐歌曲编号。
+
+        Args:
+            name (str): 歌曲名称，查找歌曲的编号。
+
+        Returns:
+            Sequence[ResponseMusicTencent]: 搜索腾讯音乐歌曲编号。
+        """
+        return self.request(endpoint="/data/music/tencent", name=name)
+
+    def music_netease(
+        self,
+        *,
+        name: Annotated[str, "歌曲名称，查找该歌曲的编号"],
+    ) -> Annotated[Sequence[ResponseMusicNetease], "搜索网易云音乐歌曲编号"]:
+        """
+        music_netease 网易音乐
+
+        搜索网易云音乐歌曲编号。
+
+        Args:
+            name (str): 歌曲名称，查找该歌曲的编号。
+
+        Returns:
+            Sequence[ResponseMusicNetease]: 搜索网易云音乐歌曲编号。
+        """
+        return self.request(endpoint="/data/music/netease", name=name)
+
+    def music_kugou(
+        self,
+        *,
+        name: Annotated[str, "歌曲名称，查找该歌曲的编号"],
+    ) -> Annotated[Sequence[ResponseMusicKugou], "搜索酷狗音乐歌曲编号"]:
+        """
+        music_kugou 酷狗音乐
+
+        搜索酷狗音乐歌曲编号。
+
+        Args:
+            name (str): 歌曲名称，查找该歌曲的编号。
+
+        Returns:
+            Sequence[ResponseMusicKugou]: 搜索酷狗音乐歌曲编号。
+        """
+        return self.request(endpoint="/data/music/kugou", name=name)
+
+    @require_token
+    def fraud_detailed(
+        self, *, uid: Annotated[int, "用户QQ号，查找是否存在行骗记录"]
+    ) -> Annotated[ResponseFraudDetailed, "搜索贴吧的行骗记录"]:
+        """
+        fraud_detailed 骗子记录
+
+        搜索贴吧的行骗记录
+
+        Args:
+            uid (int): 用户QQ号，查找是否存在行骗记录。
+
+        Returns:
+            ResponseFraudDetailed: 搜索贴吧的行骗记录。
+        """
+        return self.request(endpoint="/data/fraud/detailed", uid=uid)
+
+    def idiom_solitaire(
+        self, *, name: Annotated[str, "查找对应词语"]
+    ) -> Annotated[ResponseIdiomSolitaire, "校对成语并返回相关成语"]:
+        """
+        idiom_solitaire 成语接龙
+
+        校对成语并返回相关成语
+
+        Args:
+            name (str): 查找对应词语。
+
+        Returns:
+            ResponseIdiomSolitaire: 校对成语并返回相关成语。
+        """
+        return self.request(endpoint="/data/idiom/solitaire", name=name)
+
+    def saohua_random(
+        self,
+    ) -> Annotated[ResponseSaohuaRandom, "万花门派骚话"]:
+        """
+        saohua_random 撩人骚话
+
+        万花门派骚话
+
+        Returns:
+            ResponseSaohuaRandom: 万花门派骚话
+        """
+        return self.request(endpoint="/data/saohua/random")
+
+    def saohua_content(self) -> Annotated[ResponseSaohuaContent, "召唤一条舔狗日记"]:
+        """
+        saohua_content 舔狗日记
+
+        召唤一条舔狗日记。
+
+        Returns:
+            ResponseSaohuaContent: 召唤一条舔狗日记。
+        """
+        return self.request(endpoint="/data/saohua/content")
+
+    def sound_converter(
+        self,
+        *,
+        appkey: Annotated[str, "阿里云身份识别 appkey"],
+        access: Annotated[str, "阿里云身份识别 access"],
+        secret: Annotated[str, "阿里云身份识别 secret"],
+        text: Annotated[str, "合成的内容"],
+        voice: Annotated[Literal["Aitong"], "发音人，默认值 Aitong"] = "Aitong",
+        format: Annotated[
+            Literal["PCM", "WAV", "MP3"], "编码格式，范围 PCM, WAV, MP3，默认值 MP3"
+        ] = "MP3",
+        sample_rate: Annotated[int, "采样率，默认值 16000"] = 16000,
+        volume: Annotated[int, "音量，范围 0～100，默认值 50"] = 50,
+        speech_rate: Annotated[int, "语速，范围 -500～500，默认值 0"] = 0,
+        pitch_rate: Annotated[int, "音调，范围 -500～500，默认值 0"] = 0,
+    ) -> Annotated[ResponseSoundConverter, "阿里云语音合成（TTS）"]:
+        """
+        sound_converter 语音合成
+
+        阿里云语音合成（TTS）
+
+        Args:
+            appkey (str): 阿里云身份识别 appkey。
+            access (str): 阿里云身份识别 access。
+            secret (str): 阿里云身份识别 secret。
+            text (str): 合成的内容。
+            voice (Literal["Aitong"], optional): 发音人，默认值 Aitong。 Defaults to "Aitong".
+            format (Literal["PCM", "WAV", "MP3"], optional): 编码格式，范围 PCM, WAV, MP3，默认值 MP3。 Defaults to "MP3".
+            sample_rate (int, optional): 采样率，默认值 16000。 Defaults to 16000.
+            volume (int, optional): 音量，范围 0～100，默认值 50。 Defaults to 50.
+            speech_rate (int, optional): 语速，范围 -500～500，默认值 0。 Defaults to 0.
+            pitch_rate (int, optional): 音调，范围 -500～500，默认值 0。 Defaults to 0.
+
+        Returns:
+            ResponseSoundConverter: 阿里云语音合成（TTS）。
+        """
+        return self.request(
+            endpoint="/data/sound/converter",
+            appkey=appkey,
+            access=access,
+            secret=secret,
+            text=text,
+            voice=voice,
+            format=format,
+            sample_rate=sample_rate,
+            volume=volume,
+            speech_rate=speech_rate,
+            pitch_rate=pitch_rate,
+        )
+
 
 class AsyncJX3API:
     def __init__(
@@ -2077,7 +2269,7 @@ class AsyncJX3API:
         ] = "-",
         name: Annotated[str, "物品名称，查找该物品的相关记录"],
         limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
-    ) -> Annotated[Awaitable[Sequence[ResponseTiebaItemRecords]], "来自贴吧的外观记录"]:
+    ) -> Annotated[Awaitable[Sequence[ResponseTiebaItemRecord]], "来自贴吧的外观记录"]:
         """
         tieba_item_records 贴吧记录
 
@@ -2406,6 +2598,191 @@ class AsyncJX3API:
             column=column,
             this_time=this_time,
             that_time=that_time,
+        )
+
+    #############
+    #    VRF    #
+    #############
+    @require_token
+    async def mixed_chat(
+        self,
+        *,
+        name: Annotated[str, "机器人的名称"],
+        text: Annotated[str, "聊天的完整内容"],
+    ) -> Annotated[Awaitable[ResponseMixedChat], "智障聊天"]:
+        """
+        mixed_chat 智障聊天
+
+        Args:
+            name (str): 机器人的名称。
+            text (str): 聊天的完整内容。
+
+        Returns:
+            Awaitable[ResponseMixedChat]: 智障聊天。
+        """
+        return await self.request(endpoint="/data/mixed/chat", name=name, text=text)
+
+    async def music_tencent(
+        self,
+        *,
+        name: Annotated[str, "歌曲名称，查找歌曲的编号"],
+    ) -> Annotated[Awaitable[Sequence[ResponseMusicTencent]], "搜索腾讯音乐歌曲编号"]:
+        """
+        music_tencent 腾讯音乐
+
+        搜索腾讯音乐歌曲编号。
+
+        Args:
+            name (str): 歌曲名称，查找歌曲的编号。
+
+        Returns:
+            Awaitable[Sequence[ResponseMusicTencent]]: 搜索腾讯音乐歌曲编号。
+        """
+        return await self.request(endpoint="/data/music/tencent", name=name)
+
+    async def music_netease(
+        self,
+        *,
+        name: Annotated[str, "歌曲名称，查找该歌曲的编号"],
+    ) -> Annotated[Awaitable[Sequence[ResponseMusicNetease]], "搜索网易云音乐歌曲编号"]:
+        """
+        music_netease 网易音乐
+
+        搜索网易云音乐歌曲编号。
+
+        Args:
+            name (str): 歌曲名称，查找该歌曲的编号。
+
+        Returns:
+            Awaitable[Sequence[ResponseMusicNetease]]: 搜索网易云音乐歌曲编号。
+        """
+        return await self.request(endpoint="/data/music/netease", name=name)
+
+    async def music_kugou(
+        self,
+        *,
+        name: Annotated[str, "歌曲名称，查找该歌曲的编号"],
+    ) -> Annotated[Awaitable[Sequence[ResponseMusicKugou]], "搜索酷狗音乐歌曲编号"]:
+        """
+        music_kugou 酷狗音乐
+
+        搜索酷狗音乐歌曲编号。
+
+        Args:
+            name (str): 歌曲名称，查找该歌曲的编号。
+
+        Returns:
+            Awaitable[Sequence[ResponseMusicKugou]]: 搜索酷狗音乐歌曲编号。
+        """
+        return await self.request(endpoint="/data/music/kugou", name=name)
+
+    @require_token
+    async def fraud_detailed(
+        self, *, uid: Annotated[int, "用户QQ号，查找是否存在行骗记录"]
+    ) -> Annotated[Awaitable[ResponseFraudDetailed], "搜索贴吧的行骗记录"]:
+        """
+        fraud_detailed 骗子记录
+
+        搜索贴吧的行骗记录
+
+        Args:
+            uid (int): 用户QQ号，查找是否存在行骗记录。
+
+        Returns:
+            Awaitable[ResponseFraudDetailed]: 搜索贴吧的行骗记录。
+        """
+        return await self.request(endpoint="/data/fraud/detailed", uid=uid)
+
+    async def idiom_solitaire(
+        self, *, name: Annotated[str, "查找对应词语"]
+    ) -> Annotated[Awaitable[ResponseIdiomSolitaire], "校对成语并返回相关成语"]:
+        """
+        idiom_solitaire 成语接龙
+
+        校对成语并返回相关成语
+
+        Args:
+            name (str): 查找对应词语。
+
+        Returns:
+            Awaitable[ResponseIdiomSolitaire]: 校对成语并返回相关成语。
+        """
+        return await self.request(endpoint="/data/idiom/solitaire", name=name)
+
+    async def saohua_random(
+        self,
+    ) -> Annotated[Awaitable[ResponseSaohuaRandom], "万花门派骚话"]:
+        """
+        saohua_random 撩人骚话
+
+        万花门派骚话
+
+        Returns:
+            Awaitable[ResponseSaohuaRandom]: 万花门派骚话
+        """
+        return await self.request(endpoint="/data/saohua/random")
+
+    async def saohua_content(
+        self,
+    ) -> Annotated[Awaitable[ResponseSaohuaContent], "召唤一条舔狗日记"]:
+        """
+        saohua_content 舔狗日记
+
+        召唤一条舔狗日记。
+
+        Returns:
+            Awaitable[ResponseSaohuaContent]: 召唤一条舔狗日记。
+        """
+        return await self.request(endpoint="/data/saohua/content")
+
+    async def sound_converter(
+        self,
+        *,
+        appkey: Annotated[str, "阿里云身份识别 appkey"],
+        access: Annotated[str, "阿里云身份识别 access"],
+        secret: Annotated[str, "阿里云身份识别 secret"],
+        text: Annotated[str, "合成的内容"],
+        voice: Annotated[Literal["Aitong"], "发音人，默认值 Aitong"] = "Aitong",
+        format: Annotated[
+            Literal["PCM", "WAV", "MP3"], "编码格式，范围 PCM, WAV, MP3，默认值 MP3"
+        ] = "MP3",
+        sample_rate: Annotated[int, "采样率，默认值 16000"] = 16000,
+        volume: Annotated[int, "音量，范围 0～100，默认值 50"] = 50,
+        speech_rate: Annotated[int, "语速，范围 -500～500，默认值 0"] = 0,
+        pitch_rate: Annotated[int, "音调，范围 -500～500，默认值 0"] = 0,
+    ) -> Annotated[Awaitable[ResponseSoundConverter], "阿里云语音合成（TTS）"]:
+        """
+        sound_converter 语音合成
+
+        阿里云语音合成（TTS）
+
+        Args:
+            appkey (str): 阿里云身份识别 appkey。
+            access (str): 阿里云身份识别 access。
+            secret (str): 阿里云身份识别 secret。
+            text (str): 合成的内容。
+            voice (Literal["Aitong"], optional): 发音人，默认值 Aitong。 Defaults to "Aitong".
+            format (Literal["PCM", "WAV", "MP3"], optional): 编码格式，范围 PCM, WAV, MP3，默认值 MP3。 Defaults to "MP3".
+            sample_rate (int, optional): 采样率，默认值 16000。 Defaults to 16000.
+            volume (int, optional): 音量，范围 0～100，默认值 50。 Defaults to 50.
+            speech_rate (int, optional): 语速，范围 -500～500，默认值 0。 Defaults to 0.
+            pitch_rate (int, optional): 音调，范围 -500～500，默认值 0。 Defaults to 0.
+
+        Returns:
+            Awaitable[ResponseSoundConverter]: 阿里云语音合成（TTS）。
+        """
+        return await self.request(
+            endpoint="/data/sound/converter",
+            appkey=appkey,
+            access=access,
+            secret=secret,
+            text=text,
+            voice=voice,
+            format=format,
+            sample_rate=sample_rate,
+            volume=volume,
+            speech_rate=speech_rate,
+            pitch_rate=pitch_rate,
         )
 
     #############

@@ -596,7 +596,7 @@ class ResponseTradeRecord(TypedDict):
     name: Annotated[str, "物品名称"]
     alias: Annotated[str, "物品别名"]
     subalias: Annotated[str, "物品别名"]
-    row: Annotated[str, "物品行情"]
+    raw: Annotated[str, "物品行情"]
     level: Annotated[int, "物品等级"]
     desc: Annotated[str, "物品描述"]
     view: Annotated[str, "物品图片"]
@@ -778,3 +778,83 @@ class ResponseFireworkRankStatistical(TypedDict):
     name: Annotated[str, "烟花名称"]
     count: Annotated[int, "数量"]
     time: Annotated[int, "时间戳"]
+
+
+class ResponseMixedChat(TypedDict):
+    id: Annotated[int, "聊天记录 ID"]
+    answer: Annotated[str, "聊天回复"]
+
+
+class ResponseMusicTencent(TypedDict):
+    id: Annotated[str, "歌曲编号"]
+    name: Annotated[str, "歌曲名称"]
+    singer: Annotated[str, "歌手"]
+
+
+class ResponseMusicNetease(TypedDict):
+    id: Annotated[int, "歌曲编号"]
+    name: Annotated[str, "歌曲名称"]
+    singer: Annotated[str, "歌手"]
+
+
+class ResponseMusicKugou(TypedDict):
+    SongName: Annotated[str, "歌曲名称"]
+    AlbumID: Annotated[str, "专辑 ID"]
+    FileHash: Annotated[str, "文件Hash"]
+    SQFileHash: Annotated[str, "SQ文件Hash"]
+    HQFileHash: Annotated[str, "HQ文件Hash"]
+    MvHash: Annotated[str, "MV Hash"]
+    Audioid: Annotated[int, "音频 ID"]
+    SingerName: Annotated[str, "歌手名称"]
+    PlayUrl: Annotated[str, "播放地址"]
+    Img: Annotated[str, "图片地址"]
+
+
+class ResponseFraudDetailedData(TypedDict):
+    title: Annotated[str, "帖子标题"]
+    tid: Annotated[int, "帖子 ID"]
+    text: Annotated[str, "帖子内容"]
+    time: Annotated[int, "帖子时间"]
+
+
+class ResponseFraudDetailedRecord(TypedDict):
+    server: Annotated[str, "服务器"]
+    tieba: Annotated[str, "贴吧"]
+    data: Annotated[Sequence[ResponseFraudDetailedData], "帖子数据"]
+
+
+class ResponseFraudDetailed(TypedDict):
+    records: Annotated[Sequence[ResponseFraudDetailedRecord], "骗子记录"]
+
+
+class ResponseIdiomSolitaireQuestion(TypedDict):
+    id: Annotated[int, "成语ID"]
+    name: Annotated[str, "成语名称"]
+    tone: Annotated[str, "成语音调"]
+    pinyin: Annotated[str, "成语拼音"]
+    abbreviation: Annotated[str, "成语缩写"]
+    first: Annotated[str, "成语首字"]
+    last: Annotated[str, "成语末字"]
+    derivation: Annotated[str, "成语出处"]
+    example: Annotated[str, "成语例句"]
+    explanation: Annotated[str, "成语解释"]
+
+
+class ResponseIdiomSolitaire(TypedDict):
+    question: ResponseIdiomSolitaireQuestion
+
+
+class ResponseSaohuaRandom(TypedDict):
+    id: Annotated[int, "骚话 ID"]
+    text: Annotated[str, "骚话内容"]
+
+
+class ResponseSaohuaContent(TypedDict):
+    id: Annotated[int, "舔狗日记 ID"]
+    text: Annotated[str, "舔狗日记内容"]
+
+
+class ResponseSoundConverter(TypedDict):
+    text: Annotated[str, "合成的内容"]
+    token: Annotated[str, "token"]
+    url: Annotated[str, "音频地址"]
