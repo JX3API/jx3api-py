@@ -27,14 +27,14 @@ from .response import (
     ResponseExamAnswer,
     ResponseFireworkCollect,
     ResponseFireworkRankStatistical,
-    ResponseFireworkRecord,
+    ResponseFireworkRecords,
     ResponseFireworkStatistical,
     ResponseFraudDetailed,
     ResponseHomeFlower,
     ResponseHomeFurniture,
     ResponseHomeTravel,
     ResponseHorseRanch,
-    ResponseHorseRecord,
+    ResponseHorseRecords,
     ResponseIdiomSolitaire,
     ResponseLuckAdventure,
     ResponseLuckCollect,
@@ -71,10 +71,11 @@ from .response import (
     ResponseServerSand,
     ResponseServerStatus,
     ResponseSoundConverter,
-    ResponseTiebaItemRecord,
+    ResponseTableRecords,
+    ResponseTiebaItemRecords,
     ResponseTiebaRandom,
     ResponseTradeDemon,
-    ResponseTradeRecord,
+    ResponseTradeRecords,
     ResponseValuablesServerStatistical,
     ResponseValuablesStatistical,
 )
@@ -542,7 +543,7 @@ class JX3API:
         Returns:
             Dict: 角色装备属性详情。
         """
-        return self.request(endpoint="/role/attribute", server=server, name=name)
+        return self.request(endpoint="/data/role/attribute", server=server, name=name)
 
     @require_token
     @require_ticket
@@ -868,6 +869,27 @@ class JX3API:
         return self.request(endpoint="/data/server/event", name=name, limit=limit)
 
     @require_token
+    def table_records(
+        self,
+        *,
+        name: Annotated[str, "指定挂件名称，查找目标挂件的相关信息"],
+        token: Annotated[str, "站点标识，检查请求权限"],
+    ) -> Annotated[Sequence[ResponseTableRecords], "查询挂件的效果以及获取方式"]:
+        """
+        table_records 挂件效果
+
+        查询挂件的效果以及获取方式。
+
+        Args:
+            name (str): 指定挂件名称，查找目标挂件的相关信息。
+            token (str): 站点标识，检查请求权限。
+
+        Returns:
+            Sequence[ResponseTableRecords]: 查询挂件的效果以及获取方式。
+        """
+        return self.request(endpoint="/data/table/records", name=name, token=token)
+
+    @require_token
     def trade_demon(
         self,
         *,
@@ -889,14 +911,14 @@ class JX3API:
         return self.request(endpoint="/data/trade/demon", server=server, limit=limit)
 
     @require_token
-    def trade_record(
+    def trade_records(
         self,
         *,
         name: Annotated[str, "外观名称，查找该外观的记录"],
         server: Annotated[str | None, "区服，查找该区服的相关记录"] = None,
-    ) -> Annotated[ResponseTradeRecord, "黑市物品价格统计"]:
+    ) -> Annotated[ResponseTradeRecords, "黑市物品价格统计"]:
         """
-        trade_record 物品价格
+        trade_records 物品价格
 
         黑市物品价格统计
 
@@ -905,12 +927,12 @@ class JX3API:
             server (str, optional): 区服，查找该区服的相关记录。
 
         Returns:
-            ResponseTradeRecord: 黑市物品价格统计。
+            ResponseTradeRecords: 黑市物品价格统计。
         """
-        return self.request(endpoint="/data/trade/record", server=server, name=name)
+        return self.request(endpoint="/data/trade/records", server=server, name=name)
 
     @require_token
-    def tieba_item_record(
+    def tieba_item_records(
         self,
         *,
         server: Annotated[
@@ -918,9 +940,9 @@ class JX3API:
         ] = "-",
         name: Annotated[str, "物品名称，查找该物品的相关记录"],
         limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
-    ) -> Annotated[Sequence[ResponseTiebaItemRecord], "来自贴吧的外观记录"]:
+    ) -> Annotated[Sequence[ResponseTiebaItemRecords], "来自贴吧的外观记录"]:
         """
-        tieba_item_record 贴吧记录
+        tieba_item_records 贴吧记录
 
         来自贴吧的外观记录。
 
@@ -930,10 +952,10 @@ class JX3API:
             limit (int, optional): 限制查询结果的数量，默认值 ``10``。
 
         Returns:
-            Sequence[ResponseTiebaItemRecord]: 来自贴吧的外观记录。
+            Sequence[ResponseTiebaItemRecords]: 来自贴吧的外观记录。
         """
         return self.request(
-            endpoint="/data/tieba/item/record", server=server, name=name, limit=limit
+            endpoint="/data/tieba/item/records", server=server, name=name, limit=limit
         )
 
     @require_token
@@ -1097,11 +1119,11 @@ class JX3API:
         return self.request(endpoint="/data/active/monster")
 
     @require_token
-    def horse_record(
+    def horse_records(
         self, *, server: Annotated[str, "可选的服务器，查找该区服的相关记录"]
-    ) -> Annotated[Sequence[ResponseHorseRecord], "客户端的卢刷新记录"]:
+    ) -> Annotated[Sequence[ResponseHorseRecords], "客户端的卢刷新记录"]:
         """
-        horse_record 的卢统计
+        horse_records 的卢统计
 
         客户端的卢刷新记录。
 
@@ -1109,9 +1131,9 @@ class JX3API:
             server (str): 可选的服务器，查找该区服的相关记录。
 
         Returns:
-            Sequence[ResponseHorseRecord]: 客户端的卢刷新记录。
+            Sequence[ResponseHorseRecords]: 客户端的卢刷新记录。
         """
-        return self.request(endpoint="/data/horse/record", server=server)
+        return self.request(endpoint="/data/horse/records", server=server)
 
     @require_token
     def horse_ranch(
@@ -1130,16 +1152,16 @@ class JX3API:
         """
         return self.request(endpoint="/data/horse/ranch", server=server)
 
-    def firework_record(
+    def firework_records(
         self,
         *,
         server: Annotated[str, "区服，查找该区服的相关记录"],
         name: Annotated[str, "角色名称，查找该角色的相关记录"],
     ) -> Annotated[
-        Sequence[ResponseFireworkRecord], "烟花赠送与接收的历史记录，不保证遗漏"
+        Sequence[ResponseFireworkRecords], "烟花赠送与接收的历史记录，不保证遗漏"
     ]:
         """
-        firework_record 烟花记录
+        firework_records 烟花记录
 
         烟花赠送与接收的历史记录，不保证遗漏。
 
@@ -1148,9 +1170,9 @@ class JX3API:
             name (str): 角色名称，查找该角色的相关记录。
 
         Returns:
-            Sequence[ResponseFireworkRecord]: 烟花赠送与接收的历史记录，不保证遗漏。
+            Sequence[ResponseFireworkRecords]: 烟花赠送与接收的历史记录，不保证遗漏。
         """
-        return self.request(endpoint="/data/firework/record", server=server, name=name)
+        return self.request(endpoint="/data/firework/records", server=server, name=name)
 
     @require_token
     def firework_statistical(
@@ -1880,7 +1902,9 @@ class AsyncJX3API:
         Returns:
             Awaitable[Dict]: 角色装备属性详情。
         """
-        return await self.request(endpoint="/role/attribute", server=server, name=name)
+        return await self.request(
+            endpoint="/data/role/attribute", server=server, name=name
+        )
 
     @require_token
     @require_ticket
@@ -2215,6 +2239,31 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/server/event", name=name, limit=limit)
 
     @require_token
+    async def table_records(
+        self,
+        *,
+        name: Annotated[str, "指定挂件名称，查找目标挂件的相关信息"],
+        token: Annotated[str, "站点标识，检查请求权限"],
+    ) -> Annotated[
+        Awaitable[Sequence[ResponseTableRecords]], "查询挂件的效果以及获取方式"
+    ]:
+        """
+        table_records 挂件效果
+
+        查询挂件的效果以及获取方式。
+
+        Args:
+            name (str): 指定挂件名称，查找目标挂件的相关信息。
+            token (str): 站点标识，检查请求权限。
+
+        Returns:
+            Awaitable[Sequence[ResponseTableRecords]]: 查询挂件的效果以及获取方式。
+        """
+        return await self.request(
+            endpoint="/data/table/records", name=name, token=token
+        )
+
+    @require_token
     async def trade_demon(
         self,
         *,
@@ -2238,14 +2287,14 @@ class AsyncJX3API:
         )
 
     @require_token
-    async def trade_record(
+    async def trade_records(
         self,
         *,
         name: Annotated[str, "外观名称，查找该外观的记录"],
         server: Annotated[str | None, "区服，查找该区服的相关记录"] = None,
-    ) -> Annotated[Awaitable[ResponseTradeRecord], "黑市物品价格统计"]:
+    ) -> Annotated[Awaitable[ResponseTradeRecords], "黑市物品价格统计"]:
         """
-        trade_record 物品价格
+        trade_records 物品价格
 
         黑市物品价格统计
 
@@ -2254,10 +2303,10 @@ class AsyncJX3API:
             server (str, optional): 区服，查找该区服的相关记录。
 
         Returns:
-            ResponseTradeRecord: 黑市物品价格统计。
+            ResponseTradeRecords: 黑市物品价格统计。
         """
         return await self.request(
-            endpoint="/data/trade/record", server=server, name=name
+            endpoint="/data/trade/records", server=server, name=name
         )
 
     @require_token
@@ -2269,7 +2318,7 @@ class AsyncJX3API:
         ] = "-",
         name: Annotated[str, "物品名称，查找该物品的相关记录"],
         limit: Annotated[int, "限制查询结果的数量，默认值 ``10``"] = 10,
-    ) -> Annotated[Awaitable[Sequence[ResponseTiebaItemRecord]], "来自贴吧的外观记录"]:
+    ) -> Annotated[Awaitable[Sequence[ResponseTiebaItemRecords]], "来自贴吧的外观记录"]:
         """
         tieba_item_records 贴吧记录
 
@@ -2460,11 +2509,11 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/active/monster")
 
     @require_token
-    async def horse_record(
+    async def horse_records(
         self, *, server: Annotated[str, "可选的服务器，查找该区服的相关记录"]
-    ) -> Annotated[Awaitable[Sequence[ResponseHorseRecord]], "客户端的卢刷新记录"]:
+    ) -> Annotated[Awaitable[Sequence[ResponseHorseRecords]], "客户端的卢刷新记录"]:
         """
-        horse_record 的卢统计
+        horse_records 的卢统计
 
         客户端的卢刷新记录。
 
@@ -2472,9 +2521,9 @@ class AsyncJX3API:
             server (str): 可选的服务器，查找该区服的相关记录。
 
         Returns:
-            Awaitable[Sequence[ResponseHorseRecord]]: 客户端的卢刷新记录。
+            Awaitable[Sequence[ResponseHorseRecords]]: 客户端的卢刷新记录。
         """
-        return await self.request(endpoint="/data/horse/record", server=server)
+        return await self.request(endpoint="/data/horse/records", server=server)
 
     @require_token
     async def horse_ranch(
@@ -2494,17 +2543,17 @@ class AsyncJX3API:
         return await self.request(endpoint="/data/horse/ranch", server=server)
 
     @require_token
-    async def firework_record(
+    async def firework_records(
         self,
         *,
         server: Annotated[str, "区服，查找该区服的相关记录"],
         name: Annotated[str, "角色名称，查找该角色的相关记录"],
     ) -> Annotated[
-        Awaitable[Sequence[ResponseFireworkRecord]],
+        Awaitable[Sequence[ResponseFireworkRecords]],
         "烟花赠送与接收的历史记录，不保证遗漏",
     ]:
         """
-        firework_record 烟花记录
+        firework_records 烟花记录
 
         烟花赠送与接收的历史记录，不保证遗漏。
 
@@ -2513,10 +2562,10 @@ class AsyncJX3API:
             name (str): 角色名称，查找该角色的相关记录。
 
         Returns:
-            Awaitable[Sequence[ResponseFireworkRecord]]: 烟花赠送与接收的历史记录，不保证遗漏。
+            Awaitable[Sequence[ResponseFireworkRecords]]: 烟花赠送与接收的历史记录，不保证遗漏。
         """
         return await self.request(
-            endpoint="/data/firework/record", server=server, name=name
+            endpoint="/data/firework/records", server=server, name=name
         )
 
     @require_token

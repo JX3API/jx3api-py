@@ -558,6 +558,15 @@ class ResponseServerEvent(TypedDict):
     add_time: Annotated[int, "添加时间"]
 
 
+class ResponseTableRecords(TypedDict):
+    id: Annotated[int, "挂件ID"]
+    class_: Annotated[str, "挂件类别"]
+    name: Annotated[str, "挂件名称"]
+    ui: Annotated[str, "挂件UI"]
+    source: Annotated[str, "获取方式"]
+    desc: Annotated[str, "挂件描述"]
+
+
 class ResponseTradeDemon(TypedDict):
     id: Annotated[int, "ID"]
     zone: Annotated[str, "区服"]
@@ -589,7 +598,7 @@ class _TradeRecord(TypedDict):
     datetime: Annotated[str, "时间"]
 
 
-class ResponseTradeRecord(TypedDict):
+class ResponseTradeRecords(TypedDict):
     id: Annotated[int, "物品ID"]
     class_: Annotated[str, "物品类别"]
     subclass: Annotated[str, "物品子类别"]
@@ -604,7 +613,7 @@ class ResponseTradeRecord(TypedDict):
     data: Annotated[Sequence[Sequence[_TradeRecord]], "物品价格数据"]
 
 
-class ResponseTiebaItemRecord(TypedDict):
+class ResponseTiebaItemRecords(TypedDict):
     id: Annotated[int, "记录 ID"]
     zone: Annotated[str, "区服"]
     server: Annotated[str, "服务器"]
@@ -704,7 +713,7 @@ class ResponseActiveMonster(TypedDict):
     data: Annotated[list[ResponseActiveMonsterSkill], "首领列表"]
 
 
-class ResponseHorseRecord(TypedDict):
+class ResponseHorseRecords(TypedDict):
     id: Annotated[int, "记录ID"]
     zone: Annotated[str, "区服"]
     server: Annotated[str, "服务器"]
@@ -737,7 +746,7 @@ class ResponseHorseRanch(TypedDict):
     time: Annotated[int, "时间戳"]
 
 
-class ResponseFireworkRecord(TypedDict):
+class ResponseFireworkRecords(TypedDict):
     id: Annotated[int, "记录ID"]
     zone: Annotated[str, "区服"]
     server: Annotated[str, "服务器"]
