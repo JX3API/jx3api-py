@@ -56,6 +56,8 @@ from .response import (
     ResponseRankStatistical,
     ResponseRoleAchievement,
     ResponseRoleDetailed,
+    ResponseRoleShowCard,
+    ResponseRoleShowRandom,
     ResponseRoleTeamCdList,
     ResponseSaohuaContent,
     ResponseSaohuaRandom,
@@ -1251,6 +1253,52 @@ class JX3API:
             that_time=that_time,
         )
 
+    @require_token
+    def role_show_card(
+        self,
+        *,
+        server: Annotated[str, "目标区服，查找目标区服的相关信息"],
+        name: Annotated[str, "角色名称，查找目标角色的相关信息"],
+    ) -> Annotated[ResponseRoleShowCard, "客户端的名片墙"]:
+        """
+        role_show_card 角色名片
+
+        客户端的名片墙。
+
+        Args:
+            server (str): 目标区服，查找目标区服的相关信息。
+            name (str): 角色名称，查找目标角色的相关信息。
+
+        Returns:
+            ResponseRoleShowCard: 客户端的名片墙。
+        """
+        return self.request(endpoint="/data/role/show/card", server=server, name=name)
+
+    @require_token
+    def role_show_random(
+        self,
+        *,
+        server: Annotated[str, "目标区服，查找目标区服的相关信息"],
+        body: Annotated[str | None, "角色体型，查找目标体型的相关信息"] = None,
+        force: Annotated[str | None, "门派名称，查找目标门派的相关信息"] = None,
+    ) -> Annotated[ResponseRoleShowRandom, "客户端的随机名片"]:
+        """
+        role_show_random 随机名片
+
+        客户端的随机名片。
+
+        Args:
+            server (str): 目标区服，查找目标区服的相关信息。
+            body (str, optional): 角色体型，查找目标体型的相关信息。 Defaults to None.
+            force (str, optional): 门派名称，查找目标门派的相关信息。 Defaults to None.
+
+        Returns:
+            ResponseRoleShowRandom: 客户端的随机名片。
+        """
+        return self.request(
+            endpoint="/data/role/show/random", server=server, body=body, force=force
+        )
+
     #############
     #    VRF    #
     #############
@@ -2409,7 +2457,7 @@ class AsyncJX3API:
         Returns:
             Awaitable[Sequence[ResponseServerAntivice]]: 诛恶事件历史记录(不允许轮询)。
         """
-        return await self.request(endpoint="/data/server/antivice")
+        return await self.request(endpoint="/data/server/antivice", server=server)
 
     @require_token
     async def rank_statistical(
@@ -2647,6 +2695,55 @@ class AsyncJX3API:
             column=column,
             this_time=this_time,
             that_time=that_time,
+        )
+
+    @require_token
+    async def role_show_card(
+        self,
+        *,
+        server: Annotated[str, "目标区服，查找目标区服的相关信息"],
+        name: Annotated[str, "角色名称，查找目标角色的相关信息"],
+    ) -> Annotated[Awaitable[ResponseRoleShowCard], "客户端的名片墙"]:
+        """
+        role_show_card 角色名片
+
+        客户端的名片墙。
+
+        Args:
+            server (str): 目标区服，查找目标区服的相关信息。
+            name (str): 角色名称，查找目标角色的相关信息。
+
+
+        Returns:
+            Awaitable[ResponseRoleShowCard]: 客户端的名片墙。
+        """
+        return await self.request(
+            endpoint="/data/role/show/card", server=server, name=name
+        )
+
+    @require_token
+    async def role_show_random(
+        self,
+        *,
+        server: Annotated[str, "目标区服，查找目标区服的相关信息"],
+        body: Annotated[str | None, "角色体型，查找目标体型的相关信息"] = None,
+        force: Annotated[str | None, "门派名称，查找目标门派的相关信息"] = None,
+    ) -> Annotated[Awaitable[ResponseRoleShowRandom], "客户端的随机名片"]:
+        """
+        role_show_random 随机名片
+
+        客户端的随机名片。
+
+        Args:
+            server (str): 目标区服，查找目标区服的相关信息。
+            body (str, optional): 角色体型，查找目标体型的相关信息。 Defaults to None.
+            force (str, optional): 门派名称，查找目标门派的相关信息。 Defaults to None.
+
+        Returns:
+            Awaitable[ResponseRoleShowRandom]: 客户端的随机名片。
+        """
+        return await self.request(
+            endpoint="/data/role/show/random", server=server, body=body, force=force
         )
 
     #############

@@ -789,6 +789,22 @@ class ResponseFireworkRankStatistical(TypedDict):
     time: Annotated[int, "时间戳"]
 
 
+class ResponseRoleShowCard(TypedDict):
+    zone: Annotated[str, "区服"]
+    server: Annotated[str, "服务器"]
+    global_: Annotated[str, "全局ID"]
+    name: Annotated[str, "角色名称"]
+    static: Annotated[str, "名片图片地址"]
+    cache: Annotated[int, "缓存时间戳"]
+
+
+class ResponseRoleShowRandom(TypedDict):
+    server: Annotated[str, "区服"]
+    name: Annotated[str, "角色名"]
+    avatar: Annotated[str, "头像地址"]
+    status: Annotated[int, "状态"]
+
+
 class ResponseMixedChat(TypedDict):
     id: Annotated[int, "聊天记录 ID"]
     answer: Annotated[str, "聊天回复"]
