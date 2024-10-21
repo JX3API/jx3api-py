@@ -5,7 +5,7 @@ with open("README.md", "r+") as f:
 
 setup(
     name="jx3api",
-    version="2024.09.25",
+    version="2024.10.21",
     description="The Python SDK to the JX3API",
     long_description=readme,
     long_description_content_type="text/markdown",

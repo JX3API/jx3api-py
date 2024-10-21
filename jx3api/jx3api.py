@@ -2941,7 +2941,7 @@ class AsyncJX3API:
             aiohttp.ClientSession(
                 headers={"token": token} if (token := self.token) else {}
             ) as session,
-            session.ws_connect("wss://socket.nicemoe.cn") as ws,
+            session.ws_connect("wss://socket.jx3api.com") as ws,
         ):
             logging.info("websocket connected")
 
