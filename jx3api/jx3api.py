@@ -104,8 +104,8 @@ class JX3API:
     def __init__(
         self,
         *,
-        token: Annotated[str | None, "推栏 token"] = None,
-        ticket: Annotated[str | None, "站点标识"] = None,
+        token: Annotated[str | None, "站点标识"] = None,
+        ticket: Annotated[str | None, "推栏标识"] = None,
         base_url: str = "https://www.jx3api.com",
     ) -> None:
         self.token = token or os.getenv("JX3API_TOKEN")
@@ -1487,19 +1487,19 @@ class AsyncJX3API:
     def __init__(
         self,
         *,
-        token: Annotated[str | None, "推栏 token"] = None,
-        ticket: Annotated[str | None, "站点标识"] = None,
+        token: Annotated[str | None, "站点标识"] = None,
+        ticket: Annotated[str | None, "推栏标识"] = None,
         base_url: str = "https://www.jx3api.com",
     ) -> None:
-        if not token:
-            logging.warning(
-                "The `token` parameter is not specified, only the free API can be used."
-            )
-
         self.token = token or os.getenv("JX3API_TOKEN")
         self.ticket = ticket or os.getenv("JX3API_TICKET")
 
         self.base_url = base_url
+
+        if not self.token:
+            logging.warning(
+                "The `token` parameter is not specified, only the free API can be used."
+            )
 
     async def request(self, *, endpoint: str, **kwargs) -> Any:
         logging.debug(f"requesting: {endpoint=}, {kwargs=}")
