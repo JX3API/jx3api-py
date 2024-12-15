@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jx3api"
-version  = "2024.12.10"
+version  = "2024.12.15"
 dependencies = ["aiohttp"]
 requires-python = ">=3"
 description = "The Python SDK to the JX3API"

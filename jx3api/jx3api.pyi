@@ -358,7 +358,7 @@ class RoleAchievement(TypedDict):
     personAvatar: Annotated[str, "人物头像"]
     data: Annotated[Sequence[_RoleAchievement], "成就数据"]
 
-class MatchRecentPerformance3v3(TypedDict):
+class ArenaRecentPerformance3v3(TypedDict):
     mmr: Annotated[int, "3v3 竞技场 MMR"]
     grade: Annotated[int, "3v3 竞技场 段位"]
     ranking: Annotated[str, "3v3 竞技场 排名"]
@@ -368,7 +368,7 @@ class MatchRecentPerformance3v3(TypedDict):
     pvpType: Annotated[str, "3v3 竞技场 类型"]
     winRate: Annotated[int, "3v3 竞技场 胜率"]
 
-class MatchRecentHistory(TypedDict):
+class ArenaRecentHistory(TypedDict):
     zone: Annotated[str, "区服"]
     server: Annotated[str, "服务器"]
     avgGrade: Annotated[int, "平均段位"]
@@ -381,15 +381,15 @@ class MatchRecentHistory(TypedDict):
     startTime: Annotated[int, "开始时间"]
     endTime: Annotated[int, "结束时间"]
 
-class MatchRecentTrend(TypedDict):
+class ArenaRecentTrend(TypedDict):
     matchDate: Annotated[int, "比赛日期"]
     mmr: Annotated[int, "MMR"]
     winRate: Annotated[float, "胜率"]
 
-class MatchRecentPerformance(TypedDict, total=False):
-    _3v3: MatchRecentPerformance3v3
+class ArenaRecentPerformance(TypedDict, total=False):
+    _3v3: ArenaRecentPerformance3v3
 
-class MatchRecent(TypedDict):
+class ArenaRecent(TypedDict):
     zoneName: Annotated[str, "区服名称"]
     serverName: Annotated[str, "服务器名称"]
     roleName: Annotated[str, "角色名称"]
@@ -406,11 +406,11 @@ class MatchRecent(TypedDict):
     personName: Annotated[str, "人物名称"]
     personId: Annotated[str, "人物 ID"]
     personAvatar: Annotated[str, "人物头像"]
-    performance: MatchRecentPerformance
-    history: Annotated[Sequence[MatchRecentHistory], "近期比赛记录"]
-    trend: Annotated[Sequence[MatchRecentTrend], "近期比赛趋势"]
+    performance: ArenaRecentPerformance
+    history: Annotated[Sequence[ArenaRecentHistory], "近期比赛记录"]
+    trend: Annotated[Sequence[ArenaRecentTrend], "近期比赛趋势"]
 
-class MatchAwesome(TypedDict):
+class ArenaAwesome(TypedDict):
     zoneName: Annotated[str, "区服名称"]
     serverName: Annotated[str, "服务器名称"]
     roleName: Annotated[str, "角色名称"]
@@ -421,7 +421,7 @@ class MatchAwesome(TypedDict):
     upNum: Annotated[str, "上升名次"]
     winRate: Annotated[str, "胜率"]
 
-class MatchSchools(TypedDict):
+class ArenaSchools(TypedDict):
     name: Annotated[str, "门派名称"]
     this: Annotated[int, "本周胜场"]
     last: Annotated[int, "上周胜场"]
@@ -1313,15 +1313,15 @@ class JX3API:
         """
         pass
 
-    def match_recent(
+    def arena_recent(
         self,
         *,
         server: Annotated[str, "区服，查找该区服的相关记录"],
         name: Annotated[str, "角色名称，查找该角色的相关记录"],
         mode: Annotated[int | None, "比赛模式，查找该模式的相关记录"] = None,
-    ) -> Annotated[MatchRecent, "角色近期战绩记录"]:
+    ) -> Annotated[ArenaRecent, "角色近期战绩记录"]:
         """
-        match_recent 名剑战绩
+        arena_recent 名剑战绩
 
         角色近期战绩记录
 
@@ -1331,18 +1331,18 @@ class JX3API:
             mode (int, optional): 比赛模式，查找该模式的相关记录。
 
         Returns:
-            MatchRecent: 角色近期战绩记录。
+            ArenaRecent: 角色近期战绩记录。
         """
         pass
 
-    def match_awesome(
+    def arena_awesome(
         self,
         *,
         mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
         limit: Annotated[int, "限制查询结果的数量，默认值 20"] = 20,
-    ) -> Annotated[Sequence[MatchAwesome], "角色近期战绩记录"]:
+    ) -> Annotated[Sequence[ArenaAwesome], "角色近期战绩记录"]:
         """
-        match_awesome 名剑排行
+        arena_awesome 名剑排行
 
         角色近期战绩记录。
 
@@ -1351,17 +1351,17 @@ class JX3API:
             limit (int, optional): 限制查询结果的数量，默认值 20。
 
         Returns:
-            Sequence[MatchAwesome]: 角色近期战绩记录。
+            Sequence[ArenaAwesome]: 角色近期战绩记录。
         """
         pass
 
-    def match_schools(
+    def arena_schools(
         self,
         *,
         mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
-    ) -> Annotated[Sequence[MatchSchools], "角色近期战绩记录"]:
+    ) -> Annotated[Sequence[ArenaSchools], "角色近期战绩记录"]:
         """
-        match_schools 名剑统计
+        arena_schools 名剑统计
 
         角色近期战绩记录
 
@@ -1369,7 +1369,7 @@ class JX3API:
             mode (int, optional): 比赛模式，查找该模式的相关记录，默认值 : 33。
 
         Returns:
-            Sequence[MatchSchools]: 角色近期战绩记录.
+            Sequence[ArenaSchools]: 角色近期战绩记录.
         """
         pass
 
@@ -2565,15 +2565,15 @@ class AsyncJX3API:
         """
         pass
 
-    async def match_recent(
+    async def arena_recent(
         self,
         *,
         server: Annotated[str, "区服，查找该区服的相关记录"],
         name: Annotated[str, "角色名称，查找该角色的相关记录"],
         mode: Annotated[int | None, "比赛模式，查找该模式的相关记录"] = None,
-    ) -> Annotated[Awaitable[MatchRecent], "角色近期战绩记录"]:
+    ) -> Annotated[Awaitable[ArenaRecent], "角色近期战绩记录"]:
         """
-        match_recent 名剑战绩
+        arena_recent 名剑战绩
 
         角色近期战绩记录
 
@@ -2583,18 +2583,18 @@ class AsyncJX3API:
             mode (int, optional): 比赛模式，查找该模式的相关记录。
 
         Returns:
-            Awaitable[MatchRecent]: 角色近期战绩记录。
+            Awaitable[ArenaRecent]: 角色近期战绩记录。
         """
         pass
 
-    async def match_awesome(
+    async def arena_awesome(
         self,
         *,
         mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
         limit: Annotated[int, "限制查询结果的数量，默认值 20"] = 20,
-    ) -> Annotated[Awaitable[Sequence[MatchAwesome]], "角色近期战绩记录"]:
+    ) -> Annotated[Awaitable[Sequence[ArenaAwesome]], "角色近期战绩记录"]:
         """
-        match_awesome 名剑排行
+        arena_awesome 名剑排行
 
         角色近期战绩记录。
 
@@ -2603,17 +2603,17 @@ class AsyncJX3API:
             limit (int, optional): 限制查询结果的数量，默认值 20。
 
         Returns:
-            Awaitable[Sequence[MatchAwesome]]: 角色近期战绩记录。
+            Awaitable[Sequence[ArenaAwesome]]: 角色近期战绩记录。
         """
         pass
 
-    async def match_schools(
+    async def arena_schools(
         self,
         *,
         mode: Annotated[int, "比赛模式，查找该模式的相关记录，默认值 : 33"] = 33,
-    ) -> Annotated[Awaitable[Sequence[MatchSchools]], "角色近期战绩记录"]:
+    ) -> Annotated[Awaitable[Sequence[ArenaSchools]], "角色近期战绩记录"]:
         """
-        match_schools 名剑统计
+        arena_schools 名剑统计
 
         角色近期战绩记录
 
@@ -2621,7 +2621,7 @@ class AsyncJX3API:
             mode (int, optional): 比赛模式，查找该模式的相关记录，默认值 : 33。
 
         Returns:
-            Awaitable[Sequence[MatchSchools]]: 角色近期战绩记录.
+            Awaitable[Sequence[ArenaSchools]]: 角色近期战绩记录.
         """
         pass
 

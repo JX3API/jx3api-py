@@ -179,20 +179,20 @@ class JX3API:
 
     @require_token
     @require_ticket
-    def match_recent(self, *, server, name, mode=None):
+    def arena_recent(self, *, server, name, mode=None):
         return self.request(
-            endpoint="/data/match/recent", server=server, name=name, mode=mode
+            endpoint="/data/arena/recent", server=server, name=name, mode=mode
         )
 
     @require_token
     @require_ticket
-    def match_awesome(self, *, mode=33, limit=20):
-        return self.request(endpoint="/data/match/awesome", mode=mode, limit=limit)
+    def arena_awesome(self, *, mode=33, limit=20):
+        return self.request(endpoint="/data/arena/awesome", mode=mode, limit=limit)
 
     @require_token
     @require_ticket
-    def match_schools(self, *, mode=33):
-        return self.request(endpoint="/data/match/schools", mode=mode)
+    def arena_schools(self, *, mode=33):
+        return self.request(endpoint="/data/arena/schools", mode=mode)
 
     @require_token
     def member_recruit(self, *, server, keyword=None, table=1):
@@ -566,22 +566,22 @@ class AsyncJX3API:
 
     @require_token
     @require_ticket
-    async def match_recent(self, *, server, name, mode=None):
+    async def arena_recent(self, *, server, name, mode=None):
         return await self.request(
-            endpoint="/data/match/recent", server=server, name=name, mode=mode
+            endpoint="/data/arena/recent", server=server, name=name, mode=mode
         )
 
     @require_token
     @require_ticket
-    async def match_awesome(self, *, mode=33, limit=20):
+    async def arena_awesome(self, *, mode=33, limit=20):
         return await self.request(
-            endpoint="/data/match/awesome", mode=mode, limit=limit
+            endpoint="/data/arena/awesome", mode=mode, limit=limit
         )
 
     @require_token
     @require_ticket
-    async def match_schools(self, *, mode=33):
-        return await self.request(endpoint="/data/match/schools", mode=mode)
+    async def arena_schools(self, *, mode=33):
+        return await self.request(endpoint="/data/arena/schools", mode=mode)
 
     @require_token
     async def member_recruit(self, *, server, keyword=None, table=1):
