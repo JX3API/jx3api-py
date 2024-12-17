@@ -31,6 +31,10 @@ from jx3api import AsyncJX3API
 async_api = AsyncJX3API(token=..., ticket=...)
 
 await async_api.active_calendar(server="梦江南")
+
+# Websocket
+async for msg in async_api.socket():
+    ...
 ```
 
 ## FYI

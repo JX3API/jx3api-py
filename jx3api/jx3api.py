@@ -19,7 +19,7 @@ logging.basicConfig(
 
 class JX3API:
     def __init__(
-        self, *, token=None, ticket=None, base_url="https://seasun.nicemoe.cn"
+        self, *, token=None, ticket=None, base_url="https://www.jx3api.com"
     ):
         self.token = token or os.getenv("JX3API_TOKEN")
         self.ticket = ticket or os.getenv("JX3API_TICKET")
@@ -394,7 +394,7 @@ class JX3API:
 
 class AsyncJX3API:
     def __init__(
-        self, *, token=None, ticket=None, base_url="https://seasun.nicemoe.cn"
+        self, *, token=None, ticket=None, base_url="https://www.jx3api.com"
     ):
         self.token = token or os.getenv("JX3API_TOKEN")
         self.ticket = ticket or os.getenv("JX3API_TICKET")
